@@ -21,12 +21,11 @@ gh repo create brandbondhu-site --private --source=. --push
 
 ## Deploy on GitHub Pages (quick demo)
 
-`.github/workflows/pages.yml` publishes `index.html`, `bn/` and `assets/` on every push to `main`.
-All internal links are relative, so the site works under `https://<user>.github.io/BrandBondhu/`.
+Live at https://solid-computing.github.io/BrandBondhu/ (served from the `gh-pages` branch).
 
-One-time setup: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
-Pages on a private repo needs GitHub Pro (or make the repo public). Re-run any time from
-Actions → Deploy to GitHub Pages → Run workflow.
+`.github/workflows/pages.yml` copies `index.html`, `bn/` and `assets/` to `gh-pages` on every push
+to `main`; GitHub Pages then redeploys. Re-run any time from Actions → Deploy to GitHub Pages → Run workflow.
+All internal links are relative, so the site works under the `/BrandBondhu/` sub-path.
 
 ## Deploy on Cloudflare Pages
 
