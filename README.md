@@ -19,6 +19,14 @@ git commit -m "BrandBondhu landing page (EN + BN)"
 gh repo create brandbondhu-site --private --source=. --push
 ```
 
+## Deploy on GitHub Pages (quick demo)
+
+Live at https://solid-computing.github.io/BrandBondhu/ (served from the `gh-pages` branch).
+
+`.github/workflows/pages.yml` copies `index.html`, `bn/` and `assets/` to `gh-pages` on every push
+to `main`; GitHub Pages then redeploys. Re-run any time from Actions → Deploy to GitHub Pages → Run workflow.
+All internal links are relative, so the site works under the `/BrandBondhu/` sub-path.
+
 ## Deploy on Cloudflare Pages
 
 Cloudflare dashboard → Workers & Pages → Create → Pages → Connect to Git → pick the repo.

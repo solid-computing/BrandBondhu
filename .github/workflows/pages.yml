@@ -1,0 +1,35 @@
+name: Deploy to GitHub Pages
+
+# Pages serves the gh-pages branch. This rebuilds that branch from main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Publish only the site files (keeps README notes and _headers off the public URL)
+      - name: Publish site files to gh-pages
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          mkdir _site
+          cp -r index.html bn assets .nojekyll _site/
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
