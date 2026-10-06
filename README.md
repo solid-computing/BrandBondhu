@@ -33,3 +33,17 @@ Settings → Pages → Deploy from a branch → `main` / `(root)`. Every commit 
 
 No backend. On submit it opens WhatsApp to the business number with the seller's page link,
 category, budget and number pre-filled.
+
+## Demo app (`/demo/`)
+
+A no-build, no-backend prototype of the seller journey: find influencers, send a brief, pay into
+(demo) escrow, approve the draft, watch the 72-hour clock, see orders per discount code, get paid
+out or refunded. Everything is fictional and stored in the visitor's browser (`localStorage`).
+
+- Unlisted: `noindex`, not linked from the landing pages. Share the URL directly.
+- Bangla by default with an English toggle. Pricing shown: 15% fee (minimum ৳500 per deal) + 15% VAT on the fee.
+- **Demo tools** (top right): switch between three demo brands, fast-forward 24h/72h, reset all data.
+- The seeded "Eid collection" campaign finishes on the landing page's case-study numbers
+  (5 x ৳8,000 + 15% = ৳46,000, 184 orders, ৳250 per order) once every deal is paid out.
+- Run locally: `python -m http.server 8000`, then open http://localhost:8000/demo/
+- Payment screens are neutral on purpose: no PIN or card entry, no bKash/Nagad branding.
