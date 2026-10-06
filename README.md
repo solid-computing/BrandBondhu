@@ -36,9 +36,13 @@ category, budget and number pre-filled.
 
 ## Demo app (`/demo/`)
 
-A no-build, no-backend prototype of the seller journey: find influencers, send a brief, pay into
-(demo) escrow, approve the draft, watch the 72-hour clock, see orders per discount code, get paid
-out or refunded. Everything is fictional and stored in the visitor's browser (`localStorage`).
+A no-build, no-backend prototype of the seller journey, modelled on how sponsored content really works:
+influencers keep making their own content, so the brand agrees **what to mention** (not a finished video),
+the influencer posts it inside their own video, reel, story or live and submits **proof** (link, time of the
+mention, code), the brand checks the mention, and the fee is released after the post has stayed up
+(72 hours; 24 hours for stories and lives). A reported problem holds the payout until our team decides.
+A dedicated reel can optionally require a draft first. Everything is fictional and stored in the visitor's
+browser (`localStorage`).
 
 - Unlisted: `noindex`, not linked from the landing pages. Share the URL directly.
 - Bangla by default with an English toggle. Pricing shown: 15% fee (minimum ৳500 per deal) + 15% VAT on the fee.
