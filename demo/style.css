@@ -141,6 +141,8 @@ svg{flex:none}
 .draft .vis{aspect-ratio:9/12;max-height:220px;width:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:#fff;font-weight:700;text-align:center;padding:12px}
 .draft .vis svg{fill:#ffffff40}
 .draft .cap{padding:12px 14px;font-size:16px}
+.proof{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.shot{height:84px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;background:repeating-linear-gradient(45deg,#EEF0F8,#EEF0F8 10px,#F6F7FB 10px,#F6F7FB 20px)}
 .demo-short{border:2px dashed #B7BEDD;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;background:#fff}
 .demo-short .lbl{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .kv{display:flex;justify-content:space-between;gap:6px 10px;align-items:center;flex-wrap:wrap;font-size:16px}
