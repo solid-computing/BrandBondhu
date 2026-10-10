@@ -32,10 +32,10 @@ Supply comes first, so a seller always finds checked creators waiting.
 | 3 | | Influencer | Connects her account, sets fee and wallet, sends for review |
 | 4 | | Team | Checks followers, engagement, audience; marks Verified |
 | 5 | Win a seller | Seller | Sadia sees our post in a sellers' group, asks for a free shortlist |
-| 6 | | Team | Picks 5 verified fashion influencers in budget, sends them in chat **without names** |
+| 6 | | Team | Our system scores verified influencers (category, budget, city, audience, engagement, reach, rating); the team checks the top 5 and sends them **without names** |
 | 7 | | Seller | Signs up free: phone code + connects her Facebook page (proves she is an admin) |
 | 8 | | Team | **Verifies the brand**: real page, she is its admin, product allowed (no betting, fakes, adult, schemes) |
-| 9 | | Seller | Names unlock; she picks Nusrat |
+| 9 | | Seller | Names unlock with our top match (Nusrat, 91%, with reasons); she books in one tap, others one click away |
 | 10 | Book and pay | Seller | Writes key points (not a script), sees the price |
 | 11 | | Seller | Pays ৳9,380 (৳8,000 + 15% ৳1,200 + VAT ৳180); a licensed payment partner holds it |
 | 12 | | Influencer | Sees the offer with the money already in, accepts |
@@ -118,3 +118,7 @@ Commission-on-sales deals, several deals in the guided run, real sign-in, real p
 - **Words:** "influencer" wherever investors, sellers and our team look; "content creator" only in
   text written to the influencers themselves (as decided in #2).
 - The journey is now 19 steps; the landing page says names are shown only to verified brands.
+- **Matching is ours, not the seller's.** The system scores every verified influencer for the request
+  and our team checks the top 5. The seller gets one recommendation with the reasons and books in one
+  tap; the other matches are tucked under "See other matches". (A recommended set for bigger budgets
+  is the next step; it is not in the demo, whose seller has a small budget.)

@@ -198,6 +198,14 @@ html.embed::-webkit-scrollbar{display:none}
 .pick-main .best{font-size:13px;font-weight:700;color:var(--pink-d)}
 .pick-fee{flex:none;white-space:nowrap}
 .avatar.anon{background:#E3E6F0;color:var(--muted)}
+.pick-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.score{display:inline-flex;align-items:center;background:var(--green-s);color:var(--green);font-weight:700;font-size:13px;border-radius:999px;padding:1px 8px;white-space:nowrap;flex:none}
+.big-score{font-size:15px;padding:4px 12px}
+.rec-card{border-color:var(--pink);box-shadow:0 2px 0 var(--pink-s)}
+details.more summary{cursor:pointer;font-weight:700;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:' ▾'}
+details.more[open] summary::after{content:' ▴'}
 
 /* ---------- creator ---------- */
 .chip-check{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:600;font-size:15px;cursor:pointer;background:#fff}

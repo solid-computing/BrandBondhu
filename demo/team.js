@@ -57,11 +57,32 @@
     return out;
   }
 
-  // Best 5 verified influencers for a request: same category, fee within budget, same city first.
+  // Match score (0-100) of a verified influencer for a request. Only the right category and a fee
+  // within budget qualify; then: same city (25), engagement (25), audience share (25), reach (25),
+  // and their rating on top. Our team checks the result before anything is sent.
+  BB.matchScore = function (q, i) {
+    var b = BB.byBrand(q.brandId);
+    var raw = (i.city === b.city ? 25 : 10) + Math.min(25, i.eng / 5 * 25) + i.aud.pct / 100 * 25 +
+              Math.min(25, i.followers / 2000) + (i.rating - 4) * 12.5;
+    return Math.max(40, Math.min(97, Math.round(raw)));
+  };
+  // Why an influencer fits, in a few words, for the team and the seller.
+  BB.matchWhy = function (q, i) {
+    var b = BB.byBrand(q.brandId), a = i.aud, who = { f: L('মেয়েরা', 'women'), m: L('ছেলেরা', 'men'), mix: L('সবাই', 'everyone') }[a.type];
+    return [
+      BB.lbl(D.categories, i.category),
+      BB.lbl(D.cities, i.city) + (i.city === b.city ? L(', একই শহর', ', same city') : ''),
+      a.type === 'local' ? L('অডিয়েন্স ' + BB.lbl(D.cities, i.city) + 'র (' + a.pct + '%)', 'audience in ' + BB.lbl(D.cities, i.city) + ' (' + a.pct + '%)')
+                         : L('অডিয়েন্স ' + a.age + ' বছরের ' + who + ' (' + a.pct + '%)', 'audience ' + who + ' ' + a.age + ' (' + a.pct + '%)'),
+      L('এনগেজমেন্ট ', 'engagement ') + BB.pct(i.eng),
+      L('বাজেটে মিলে', 'fits the budget')
+    ];
+  };
+  // Best 5 verified influencers for a request, highest match first.
   BB.matchesFor = function (q) {
     var b = BB.byBrand(q.brandId), max = D.budgets[q.budget].max;
     return D.influencers.filter(function (i) { return BB.isMember(i.id) && i.category === b.cat && i.fee <= max; })
-      .sort(function (a, c) { return ((c.city === b.city) - (a.city === b.city)) || (c.rating - a.rating) || (c.followers - a.followers); })
+      .sort(function (a, c) { return (BB.matchScore(q, c) - BB.matchScore(q, a)) || (c.followers - a.followers); })
       .slice(0, 5).map(function (i) { return i.id; });
   };
   BB.teamSendShortlist = function (qid) {
@@ -88,11 +109,13 @@
         var b = BB.byBrand(q.brandId), picks = BB.matchesFor(q).map(BB.byId);
         return h('article', { class: 'card attn-card' }, head(q),
           h('div', { class: 'chips' }, h('span', { class: 'chip chip-pink' }, L('নতুন', 'New')), h('span', { class: 'chip chip-cream' }, BB.lbl(D.categories, b.cat)), h('span', { class: 'chip' }, BB.lbl(D.budgets, q.budget))),
-          h('strong', { class: 'small' }, L('মিলিয়ে দেখা ' + picks.length + ' জন (ক্যাটাগরি, বাজেট, শহর)', picks.length + ' matches (category, budget, city)')),
-          h('ul', { class: 'ledger' }, picks.map(function (i) {
+          h('strong', { class: 'small' }, L('সিস্টেমের সেরা ' + picks.length + ' জন। চেক করে পাঠান।', 'Our system\'s top ' + picks.length + '. Check them, then send.')),
+          h('p', { class: 'tiny muted' }, L('স্কোর: ক্যাটাগরি আর বাজেট মিলতে হবে, তারপর শহর, অডিয়েন্স, এনগেজমেন্ট, রিচ আর রেটিং।', 'Score: category and budget must fit, then city, audience, engagement, reach and rating.')),
+          h('ul', { class: 'ledger' }, picks.map(function (i, k) {
             return h('li', { style: 'align-items:center' }, BB.avatar(i, 'avatar-sm'),
-              h('span', { style: 'flex:1;min-width:0' }, h('strong', null, BB.infName(i)), h('span', { class: 'tiny muted', style: 'display:block' },
-                D.platforms[i.platform] + ' · ' + BB.lbl(D.cities, i.city) + ' · ' + BB.compact(i.followers) + ' · ' + BB.pct(i.eng) + ' · ★ ' + i.rating.toFixed(1))),
+              h('span', { style: 'flex:1;min-width:0' }, h('strong', null, BB.infName(i)), k === 0 ? h('span', { class: 'chip chip-pink tiny', style: 'margin-left:6px' }, L('সাজেশন', 'Recommended')) : null,
+                h('span', { class: 'tiny muted', style: 'display:block' }, BB.matchWhy(q, i).slice(1, 4).join(' · '))),
+              h('span', { class: 'score' }, BB.matchScore(q, i) + '%'),
               h('strong', null, BB.money(i.fee)));
           })),
           h('button', { type: 'button', class: 'btn', 'data-j': 'send-shortlist', style: 'align-self:flex-start', onclick: function () {
