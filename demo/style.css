@@ -235,3 +235,11 @@ details.more[open] summary::after{content:' ▴'}
 @keyframes jspot{0%,100%{box-shadow:0 0 0 3px #fff,0 0 0 6px #F5B700}50%{box-shadow:0 0 0 3px #fff,0 0 0 12px #F5B70055}}
 .j-press{transform:scale(.95);filter:brightness(.92);transition:transform .15s,filter .15s}
 @media (prefers-reduced-motion:reduce){.j-spot{animation:none}.j-press{transition:none}}
+
+/* ---------- refund cases: checklist and decision ---------- */
+.checklist{display:flex;flex-direction:column;gap:8px}
+.checklist .radio{align-items:flex-start}
+.checklist .radio input{margin-top:3px}
+.radio.on{border-color:#2E9E66;background:var(--green-s)}
+.case-steps li{align-items:center}
+.case-flow li .big{font-size:18px}

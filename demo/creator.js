@@ -256,17 +256,29 @@
           BB.proofCard(c, d));
         break;
       }
-      case 'disputed':
-        panel = d.kind === 'cancel'
-          ? h('div', { class: 'panel attn' }, h('strong', null, L('ব্র্যান্ড বাতিল করতে চায়', 'The brand asked to cancel')),
-              h('p', { class: 'small' }, L('আমাদের টিম আপনার সাথে কথা বলবে। কাজ শুরু করে থাকলে জানান, তাহলে ডিল চলবে।', 'Our team will check with you. If you have already started, tell us and the deal carries on.')))
-          : d.kind === 'declined'
-          ? h('div', { class: 'panel' }, h('strong', null, L('আপনি অফারটা নেননি', 'You declined this offer')),
-              h('p', { class: 'small' }, L('আমাদের টিম ব্র্যান্ডের সাথে বিষয়টা মিটিয়ে নেবে।', 'Our team will sort it out with the brand.')))
-          : h('div', { class: 'panel attn' }, h('strong', null, L('ব্র্যান্ড একটা সমস্যা জানিয়েছে', 'The brand reported a problem')),
-              h('p', { class: 'small' }, L('কারণ: ' + (d.disputeReason || '') + '। আমাদের টিম আপনার প্রুফ দেখছে। টাকা আপাতত আটকে আছে।', 'Reason: ' + (d.disputeReason || '') + '. Our team is checking your proof. The money is on hold for now.')),
-              BB.proofCard(c, d));
+      case 'disputed': {
+        var cs = BB.caseOf(d), replyBox = null;
+        if (BB.needsReply(d)) {
+          if (cs.reply) replyBox = h('div', { class: 'proof' }, h('strong', { class: 'small' }, L('আপনার উত্তর', 'Your reply')), h('p', null, '“' + cs.reply + '”'));
+          else {
+            var rta = h('textarea', { id: 'cr-reply', maxlength: 300 }, BB.defaultReply(d));
+            replyBox = h('div', { class: 'proof' },
+              BB.field('cr-reply', L('আপনার কথা জানান', 'Give your side'), rta, L('সিদ্ধান্তের আগে টিম আপনার কথা পড়বে।', 'Our team reads this before deciding.')),
+              h('button', { type: 'button', class: 'btn btn-sm', 'data-j': 'case-reply', style: 'align-self:flex-start', onclick: function () {
+                BB.caseReply(c, d, rta.value); BB.toast(L('আপনার কথা টিমের কাছে গেছে।', 'Your side was sent to our team.')); BB.render();
+              } }, L('টিমকে পাঠান', 'Send to our team'), icon('arrow', 16)));
+          }
+        }
+        panel = h('div', { class: 'panel attn' },
+          h('strong', null, { cancel: L('ব্র্যান্ড বাতিল করতে চায়', 'The brand asked to cancel'), declined: L('আপনি অফারটা নেননি', 'You declined this offer') }[d.kind] || L('ব্র্যান্ড একটা সমস্যা জানিয়েছে', 'The brand reported a problem')),
+          h('p', { class: 'small' }, d.kind === 'declined' ? L('আমাদের টিম ব্র্যান্ডের সাথে বিষয়টা মিটিয়ে নেবে।', 'Our team will sort it out with the brand.')
+            : L('কারণ: ' + (d.disputeReason || '') + '। সিদ্ধান্ত না হওয়া পর্যন্ত টাকা আটকে থাকবে।', 'Reason: ' + (d.disputeReason || '') + '. The money stays on hold until it is decided.')),
+          replyBox,
+          d.kind === 'problem' || !d.kind ? BB.proofCard(c, d) : null,
+          h('strong', { class: 'small' }, L('কীভাবে সিদ্ধান্ত হয়', 'How it is decided')),
+          BB.caseProgress(c, d));
         break;
+      }
       case 'paid':
         panel = h('div', { class: 'panel', style: 'background:var(--green-s)' },
           h('span', { class: 'small', style: 'color:var(--green);font-weight:700' }, L('আপনার ওয়ালেটে এসেছে', 'In your wallet')),
@@ -278,7 +290,7 @@
       default:
         panel = h('div', { class: 'panel' }, h('strong', null, L('এই কাজটা বাতিল হয়েছে', 'This deal was cancelled')),
           h('p', { class: 'small' }, d.declined ? L('আপনি অফারটা ফিরিয়ে দিয়েছেন। টিম চেক করে ব্র্যান্ডকে টাকা ফেরত দিয়েছে।', 'You declined the offer. After a check, our team refunded the brand.')
-            : d.resolved === 'refund' ? L('টিম দেখেছে উল্লেখ ছিল না, তাই ব্র্যান্ড টাকা ফেরত পেয়েছে।', 'Our team found no mention, so the brand got its money back.')
+            : d.resolved === 'refund' && BB.caseOutcome(d) ? L('টিমের সিদ্ধান্ত: ', 'Our team\'s decision: ') + BB.caseOutcome(d)[2]
             : L('ব্র্যান্ড ডিলটা বাতিল করেছে।', 'The brand cancelled the deal.')));
     }
     var steps = d.stage === 'refunded' ? null : h('ol', { class: 'dots', 'aria-label': stageWord(c, d) }, ORDER.map(function (s, k) {

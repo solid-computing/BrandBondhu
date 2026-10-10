@@ -367,7 +367,75 @@
   // kind: 'problem' (after posting), 'cancel' (brand asks to cancel before posting), 'declined' (influencer said no).
   function openCase(c, d, kind, reason) {
     d.kind = kind; d.prevStage = d.stage; d.disputeReason = reason; d.resolved = null;
+    d.case = { checks: [], reply: null, repliedAt: null, outcome: null, proposedAt: null, approvedAt: null };
     advance(c, d, 'disputed');
+  }
+
+  /* How a case is decided: both sides are heard, our team works through a checklist, proposes a
+     decision with a reason, and a second person (finance) approves it. Only then does money move. */
+  var STAFF = { checker: { bn: 'তানিয়া (সাপোর্ট)', en: 'Tania (support)' }, approver: { bn: 'রফিক (ফাইন্যান্স)', en: 'Rafiq (finance)' } };
+  function caseOf(d) {
+    if (!d.case) d.case = { checks: [], reply: null, repliedAt: null, outcome: null, proposedAt: null, approvedAt: null };
+    return d.case;
+  }
+  function needsReply(d) { return d.kind !== 'declined'; }
+  function caseChecks(c, d) {
+    var timed = d.proof && d.proof.len && (c.format === 'mention' || c.format === 'live');
+    if (d.kind === 'cancel') return [
+      L('ইনফ্লুয়েন্সারকে জিজ্ঞেস করা হয়েছে কাজ শুরু হয়েছে কি না', 'Asked the influencer whether work has started'),
+      L('কোনো ড্রাফট বা পোস্ট নেই, চেক করা হয়েছে', 'Checked there is no draft or post yet'),
+      L('দুই পক্ষের কথা পড়া হয়েছে', 'Read both sides')];
+    if (d.kind === 'declined') return [
+      L('ইনফ্লুয়েন্সার নিশ্চিত করেছেন যে তিনি করবেন না', 'Confirmed with the influencer that they will not do it'),
+      L('ব্র্যান্ডকে অন্য একজন ম্যাচ অফার করা হয়েছে', 'Offered the brand another match')];
+    return [
+      L('পোস্টের লিংক খোলা হয়েছে', 'Opened the post link'),
+      timed ? L('দেওয়া সময়ে দেখা হয়েছে (' + mmss(d.proof.from) + '–' + mmss(d.proof.to) + ')', 'Watched at the given time (' + mmss(d.proof.from) + '–' + mmss(d.proof.to) + ')')
+            : L('রেকর্ডিং দেখা হয়েছে', 'Watched the recording'),
+      L('কোড বলা বা দেখানো হয়েছে কি না চেক করা হয়েছে', 'Checked whether the code was said or shown'),
+      L('দুই পক্ষের কথা পড়া হয়েছে', 'Read both sides')];
+  }
+  function caseReady(c, d) {
+    var cs = caseOf(d), n = caseChecks(c, d).length;
+    for (var k = 0; k < n; k++) if (!cs.checks[k]) return false;
+    return !needsReply(d) || !!cs.reply;
+  }
+  // [key, button label, reason shown to both sides]
+  function caseOutcomes(d) {
+    if (d.kind === 'declined') return [['refund', L('ব্র্যান্ডকে টাকা ফেরত', 'Refund the brand'), L('ইনফ্লুয়েন্সার কাজটা নেননি, আর ব্র্যান্ড অন্য ম্যাচ চাননি।', 'The influencer declined and the brand did not want another match.')]];
+    if (d.kind === 'cancel') return [
+      ['refund', L('কাজ শুরু হয়নি: টাকা ফেরত', 'Not started: refund'), L('কাজ শুরু হয়নি, তাই ব্র্যান্ড পুরো টাকা ফেরত পাবে।', 'Work had not started, so the brand gets a full refund.')],
+      ['resume', L('কাজ শুরু হয়ে গেছে: ডিল চলবে', 'Work started: deal carries on'), L('ইনফ্লুয়েন্সার কাজ শুরু করে ফেলেছেন, তাই ডিল চলবে।', 'The influencer had already started, so the deal carries on.')]];
+    return [
+      ['refund', L('উল্লেখ নেই: পুরো টাকা ফেরত', 'No mention: full refund'), L('দেওয়া সময়ে পোস্টে কোনো উল্লেখ নেই, ইনফ্লুয়েন্সারও তা মেনেছেন।', 'There is no mention at the given time, and the influencer agreed.')],
+      ['resume', L('উল্লেখ আছে: পেমেন্ট চলবে', 'Mention is there: payout carries on'), L('দেওয়া সময়ে উল্লেখ আর কোড দুটোই আছে।', 'The mention and the code are both there at the given time.')]];
+  }
+  function caseOutcome(d) { var o = caseOf(d).outcome; return o ? caseOutcomes(d).filter(function (x) { return x[0] === o; })[0] : null; }
+  function defaultReply(d) {
+    return d.kind === 'cancel' ? L('আমি এখনো কাজ শুরু করিনি।', 'I have not started yet.')
+                               : L('আমি দেখেছি। ভিডিওতে উল্লেখটা বাদ পড়ে গেছে, দুঃখিত।', 'I checked. The mention got cut from the video, sorry.');
+  }
+  function caseReply(c, d, text) { var cs = caseOf(d); if (cs.reply || !needsReply(d)) return; cs.reply = (text || '').trim() || defaultReply(d); cs.repliedAt = now(); save(); }
+  function caseCheck(c, d, k, on) { caseOf(d).checks[k] = !!on; save(); }
+  function casePropose(c, d, outcome) {
+    var cs = caseOf(d);
+    if (!caseReady(c, d) || cs.outcome) return false;
+    cs.outcome = outcome; cs.proposedAt = now(); save(); return true;
+  }
+  function caseSendBack(c, d) { var cs = caseOf(d); cs.outcome = null; cs.proposedAt = null; save(); }
+  function caseApprove(c, d) {
+    var cs = caseOf(d);
+    if (!cs.outcome || d.stage !== 'disputed') return false;
+    cs.approvedAt = now(); resolveDispute(c, d, cs.outcome); return true;
+  }
+  // Where the case is, for the seller and the influencer.
+  function caseProgress(c, d) {
+    var cs = caseOf(d), done = d.stage !== 'disputed', rows = [[true, L('টাকা আটকে রাখা হয়েছে', 'Money held')]];
+    if (needsReply(d)) rows.push([!!cs.reply, L('ইনফ্লুয়েন্সারের কথা', 'The influencer\'s side')]);
+    rows.push([done || caseReady(c, d), L('টিমের চেকলিস্ট', 'Our team\'s checks')]);
+    rows.push([done || !!cs.outcome, L('সিদ্ধান্তের প্রস্তাব, কারণ সহ', 'Decision proposed, with the reason')]);
+    rows.push([done, L('দ্বিতীয় অ্যাপ্রুভাল (ফাইন্যান্স)', 'Second approval (finance)')]);
+    return h('ul', { class: 'ledger case-steps' }, rows.map(function (r) { return h('li', null, icon(r[0] ? 'check' : 'clock', 18, r[0] ? 'verified' : null), h('span', null, r[1])); }));
   }
   function caseName(d) {
     return { problem: L('পোস্ট নিয়ে সমস্যা', 'Problem with the post'), cancel: L('ব্র্যান্ড বাতিল করতে চায়', 'Brand asks to cancel'),
@@ -968,14 +1036,13 @@
           cancel: [L('বাতিলের অনুরোধ গেছে', 'Cancellation requested'), L('টিম ইনফ্লুয়েন্সারের সাথে কথা বলছে। কাজ শুরু না হলে ' + money(d.total) + ' পুরো ফেরত পাবেন। ততক্ষণ টাকা পেমেন্ট পার্টনারের কাছে জমা।', 'Our team is checking with the influencer. If work has not started, you get ' + money(d.total) + ' back in full. Until then the money stays with the payment partner.')],
           declined: [L('ইনফ্লুয়েন্সার অফারটা নেননি', 'The influencer said no'), L('টিম একটু দেখে আপনাকে অন্য একজন সাজেশন দেবে, নয়তো টাকা ফেরত দেবে। আপনার টাকা নিরাপদে জমা আছে।', 'After a quick check, our team will offer you another match or refund you. Your money is safe with the payment partner.')]
         }[d.kind || 'problem'];
-        var demoBtns = d.kind === 'declined'
-          ? [h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { resolveDispute(c, d, 'refund'); toast(L('টিম চেক করে টাকা ফেরত দিয়েছে।', 'Checked by our team: refunded.')); render(); } }, L('চেক করে টাকা ফেরত', 'Checked: refund'))]
-          : [h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { resolveDispute(c, d, 'refund'); toast(L('টিম চেক করে টাকা ফেরত দিয়েছে।', 'Checked by our team: refunded.')); render(); } }, d.kind === 'cancel' ? L('চেক করে টাকা ফেরত', 'Checked: refund') : L('উল্লেখ ছিল না: পুরো টাকা ফেরত', 'No mention: full refund')),
-             h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { resolveDispute(c, d, 'resume'); toast(L('ডিল আবার চলছে।', 'The deal carries on.')); render(); } }, d.kind === 'cancel' ? L('কাজ শুরু হয়ে গেছে: ডিল চলবে', 'Work had started: deal carries on') : L('উল্লেখ ঠিক ছিল: পেমেন্ট চালু', 'Mention was fine: resume payout'))];
         return h('div', { class: 'panel' }, h('strong', null, words[0]), h('p', null, words[1]),
           proofCard(c, d),
+          h('strong', { class: 'small' }, L('কীভাবে সিদ্ধান্ত হয়', 'How it is decided')),
+          caseProgress(c, d),
           WORLD === 'journey' ? h('p', { class: 'tiny muted' }, L('আমাদের টিম কনসোল থেকে সিদ্ধান্ত নেয়।', 'Our team decides this in the team console.')) :
-          h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো শর্টকাট: আমাদের টিমের সিদ্ধান্ত', 'Demo shortcut: our team\'s decision')), h('div', { class: 'row' }, demoBtns)));
+          h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো: টিম কনসোলে দেখুন', 'Demo: see it in the team console')),
+            h('a', { class: 'btn btn-ghost btn-sm', href: '#/team/problems', style: 'align-self:flex-start' }, L('টিম কনসোল: ফেরত', 'Team console: Refunds'), icon('arrow', 16))));
       }
       case 'paid': {
         var fm = d.final, cpo = (d.fee + d.pf) / fm.orders;
@@ -989,7 +1056,8 @@
       }
       default:
         return h('div', { class: 'panel', 'data-j': 'refund-done' }, h('strong', null, L('পুরো টাকা ফেরত', 'Full refund')),
-          h('p', null, d.kind ? L('টিম চেক করার পর ' + money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', 'After our team\'s check, ' + money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')
+          d.kind && caseOutcome(d) ? h('p', { class: 'small' }, L('কারণ: ', 'Reason: ') + caseOutcome(d)[2]) : null,
+          h('p', null, d.kind ? L('টিমের চেক আর ফাইন্যান্সের অ্যাপ্রুভালের পর ' + money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', 'After our team\'s checks and a second approval, ' + money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')
                               : L(money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')),
           h('div', { class: 'row' }, h('a', { class: 'btn btn-sm', href: '#/find' }, L('অন্য ইনফ্লুয়েন্সার খুঁজুন', 'Find another influencer'))));
     }
@@ -1042,7 +1110,9 @@
     save: save, byId: byId, byBrand: byBrand, brand: brand, campaignById: campaignById, findDeal: findDeal, isMember: isMember,
     now: now, L: L, txt: txt, lbl: lbl, infName: infName, brandName: brandName, money: money, num: num, compact: compact, pct: pct,
     dateStr: dateStr, ago: ago, avatar: avatar, audText: audText, metrics: metrics, advance: advance, planText: planText, planWord: planWord,
-    stageText: stageText, stageTone: stageTone, resolveDispute: resolveDispute, openCase: openCase, caseName: caseName, fundCampaign: fundCampaign, moveClock: moveClock, fastForward: fastForward,
+    stageText: stageText, stageTone: stageTone, openCase: openCase, caseName: caseName, STAFF: STAFF, caseOf: caseOf, needsReply: needsReply,
+    caseChecks: caseChecks, caseReady: caseReady, caseOutcomes: caseOutcomes, caseOutcome: caseOutcome, defaultReply: defaultReply, caseReply: caseReply,
+    caseCheck: caseCheck, casePropose: casePropose, caseSendBack: caseSendBack, caseApprove: caseApprove, caseProgress: caseProgress, fundCampaign: fundCampaign, moveClock: moveClock, fastForward: fastForward,
     pageHead: pageHead, emptyCard: emptyCard, kv: kv, statCard: statCard, field: field, toast: toast, go: go, render: render, route: route, roleOf: roleOf,
     proofCard: proofCard, codeRows: codeRows, copyBtn: copyBtn, tabBar: tabBar, sum: sum, toggleLang: toggleLang,
     setLang: function (l) { if (l !== state.lang) { state.lang = l; save(); render(); } }

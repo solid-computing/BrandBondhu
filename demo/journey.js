@@ -167,28 +167,52 @@
   var WHATIF = [
     { lane: 'seller', phase: 6, gap: 5,
       t: function () { return L('সমস্যা জানান', 'Reports a problem'); },
-      cap: function () { return L('ধরুন নুসরাত আসলে কিছু বলেননি। সাদিয়া "উল্লেখ নেই" জানান, সাথে সাথে পেমেন্ট আটকে যায়।', 'Say Nusrat never actually mentioned it. Sadia reports "no mention" and the payout freezes at once.'); },
+      cap: function () { return L('ধরুন নুসরাত আসলে কিছু বলেননি। সাদিয়া "উল্লেখ নেই" জানান, সাথে সাথে পেমেন্ট আটকে যায়। কোনো টাকা এখনই ফেরত যায় না।', 'Say Nusrat never actually mentioned it. Sadia reports "no mention" and the payout freezes at once. No money goes back yet.'); },
       route: camp, target: function () { return '[data-j="report"]'; },
       done: function () { var x = deal(); return !!x && (x.d.stage === 'disputed' || !!x.d.resolved); },
       act: function () { var x = deal(); BB.openCase(x.c, x.d, 'problem', L('কোনো উল্লেখ নেই', 'The sponsor was not mentioned')); } },
-    { lane: 'team', phase: 6, gap: 6,
-      t: function () { return L('প্রুফ দেখে সিদ্ধান্ত', 'Checks proof, decides'); },
-      cap: function () { return L('টিম প্রুফের লিংক খুলে সময়টা দেখে। উল্লেখ নেই, তাই সেলার টাকা ফেরত পান। উল্লেখ থাকলে উল্টো পেমেন্ট চালু হতো।', 'Our team opens the proof link at the given time. No mention, so the seller is refunded. Had it been there, the payout would carry on.'); },
-      why: function () { return L('টিমের চেক ছাড়া কোনো টাকা ফেরত যায় না। সেলার আর ইনফ্লুয়েন্সার দুজনই সুরক্ষিত।', 'No refund goes out without our check. Sellers and influencers are both protected.'); },
-      route: function () { return '#/team/problems'; }, target: function () { return '[data-j="refund"]'; },
+    { lane: 'creator', phase: 6, gap: 3,
+      t: function () { return L('নিজের কথা জানান', 'Gives her side'); },
+      cap: function () { return L('নুসরাত অভিযোগটা দেখেন আর নিজের কথা জানান। দুই পক্ষের কথা না শুনে সিদ্ধান্ত হয় না।', 'Nusrat sees the complaint and gives her side. Nothing is decided without hearing both sides.'); },
+      route: function () { return dealRoute('deal'); }, target: function () { return '[data-j="case-reply"]'; },
+      done: function () { var x = deal(); return !!x && (!!BB.caseOf(x.d).reply || !!x.d.resolved); },
+      act: function () { var x = deal(); BB.caseReply(x.c, x.d); } },
+    { lane: 'team', phase: 6, gap: 2,
+      t: function () { return L('চেকলিস্ট, তারপর প্রস্তাব', 'Checks, then proposes'); },
+      cap: function () { return L('টিম চেকলিস্ট ধরে কাজ করে: দেওয়া সময়ে পোস্টটা দেখে, কোড চেক করে, দুই পক্ষের কথা পড়ে। তারপরই কারণ সহ সিদ্ধান্তের প্রস্তাব দিতে পারে।', 'Our team works through a checklist: watches the post at the given time, checks the code, reads both sides. Only then can they propose a decision, with the reason.'); },
+      why: function () { return L('সব চেক শেষ না হলে প্রস্তাবের বোতাম চাপা যায় না।', 'The propose button stays locked until every check is done.'); },
+      route: function () { return '#/team/problems'; },
+      target: function () {
+        var x = deal(); if (!x) return '[data-j="propose"]';
+        var cs = BB.caseOf(x.d), n = BB.caseChecks(x.c, x.d).length;
+        for (var k = 0; k < n; k++) if (!cs.checks[k]) return '[data-j="chk-' + k + '"]';
+        return '[data-j="propose"]';
+      },
+      done: function () { var x = deal(); return !!x && (!!BB.caseOf(x.d).outcome || !!x.d.resolved); },
+      act: function () {
+        var x = deal(), n = BB.caseChecks(x.c, x.d).length;
+        for (var k = 0; k < n; k++) BB.caseCheck(x.c, x.d, k, true);
+        BB.casePropose(x.c, x.d, 'refund');
+      } },
+    { lane: 'team', phase: 6, gap: 1,
+      t: function () { return L('দ্বিতীয় অ্যাপ্রুভাল', 'Second approval'); },
+      cap: function () { return L('ফাইন্যান্সের আরেকজন প্রস্তাবটা দেখে অ্যাপ্রুভ করেন। তারপরই পেমেন্ট পার্টনার সাদিয়াকে টাকা ফেরত পাঠায়।', 'A second person, in finance, reviews the proposal and approves it. Only then does the payment partner send Sadia her money back.'); },
+      why: function () { return L('একা কেউ টাকা সরাতে পারে না।', 'No single person can move money.'); },
+      route: function () { return '#/team/problems'; }, target: function () { return '[data-j="approve-refund"]'; },
       done: function () { var x = deal(); return !!x && !!x.d.resolved; },
-      act: function () { var x = deal(); BB.resolveDispute(x.c, x.d, 'refund'); } },
+      act: function () { var x = deal(); BB.caseApprove(x.c, x.d); } },
     { lane: 'seller', phase: 6, gap: 0, view: true,
-      t: function () { return L('পুরো টাকা ফেরত', 'Gets it all back'); },
+      t: function () { return L('কারণ সহ টাকা ফেরত', 'Refunded, with the reason'); },
       cap: function () {
         var x = deal();
-        if (x && x.d.resolved === 'resume') return L('উল্লেখ ঠিক ছিল, তাই পেমেন্ট আবার চালু হলো। 72 ঘণ্টা শেষে নুসরাত টাকা পাবেন।', 'The mention was there, so the payout carried on. Nusrat is paid once the 72 hours are up.');
-        return L('সাদিয়া পুরো ' + m(amt().total) + ' ফেরত পান। পোস্ট না হলে কারো টাকা হারায় না।', 'Sadia gets all ' + m(amt().total) + ' back. If nothing is posted, nobody loses money.');
+        if (x && x.d.resolved === 'resume') return L('উল্লেখ ঠিক ছিল, তাই পেমেন্ট আবার চালু হলো। দুই পক্ষই কারণটা দেখেন।', 'The mention was there, so the payout carried on. Both sides see the reason.');
+        return L('সাদিয়া পুরো ' + m(amt().total) + ' ফেরত পান, কারণ সহ। নুসরাতও সিদ্ধান্ত আর কারণ দেখেন।', 'Sadia gets all ' + m(amt().total) + ' back, with the reason. Nusrat sees the decision and the reason too.');
       },
       route: camp, target: function () { var x = deal(); return x && x.d.resolved === 'resume' ? '[data-deal="' + x.d.id + '"]' : '[data-j="refund-done"]'; },
-      done: function (s) { return s.j.seenW >= 3; },
-      act: function () { S().j.seenW = 3; BB.save(); } }
+      done: function (s) { return s.j.seenW >= WHATIF.length; },
+      act: function () { S().j.seenW = WHATIF.length; BB.save(); } }
   ];
+
 
   /* ---------- engine ---------- */
   var busy = false, lastIdx = null, followT = null, spotKey = '';
