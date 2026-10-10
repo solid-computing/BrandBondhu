@@ -164,7 +164,7 @@
 
   // People and requests our team works with, shared by both worlds.
   function seedTeam(T, s) {
-    s.prospects = D.prospects.map(function (p) { return Object.assign({}, p, { at: T(p.ago) }); });
+    s.prospects = (D.prospects || []).map(function (p) { return Object.assign({}, p, { at: T(p.ago) }); });
     s.requests = [
       { id: 'r-mezban', brandId: 'chattala-bites', budget: 'b20', phone: '018•• •••374', at: T(60), status: 'converted', picks: ['rafi', 'tahmid', 'farzana', 'rakib'] },
       { id: 'r-surma', brandId: 'sylhet-glow', budget: 'b20', phone: '017•• •••905', at: T(40), status: 'converted', picks: ['priya', 'tasnim', 'tania', 'lamia', 'nazia'] }

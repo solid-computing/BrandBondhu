@@ -141,7 +141,7 @@
     st.main.forEach(function (n) { addNode(n, 'main'); });
     st.whatif.forEach(function (n) { addNode(n, 'whatif'); });
     ol.replaceChildren.apply(ol, items);
-    $('#p-note').replaceChildren(document.createTextNode(t('note')));
+    $('#p-note').replaceChildren(document.createTextNode(t('note') + ' '), el('a', { href: 'app.html', text: t('app') + ' →' }));
     drawLines();
     var cur = ol.querySelector('.nd.cur'), key = st.mode + st.idx;
     if (cur && key !== prevKey) {
