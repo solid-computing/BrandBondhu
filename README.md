@@ -46,7 +46,8 @@ Dhaka Threads x Nusrat (৳8,000 + 15% fee + VAT = ৳9,380), across three sides
 - **Influencer** (phone): invite message, join, connect account, fee and wallet, under review, offer, plan,
   proof, payout, earnings.
 - **Seller** (phone): our post in a sellers' group, free-shortlist form, shortlist in chat (no names), free sign-up
-  with the Facebook page connected, our brand check, names unlocked, then the seller app
+  with the Facebook page connected, our brand check, then one recommended match (score and reasons) to book in
+  one tap, then the seller app
   (brief and price, pay, approve the plan, check the mention, results, run again).
 - **Brandবন্ধু team** (laptop): shortlist requests, influencer pipeline, verification of brands and influencers,
   money, reported problems.

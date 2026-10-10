@@ -62,7 +62,6 @@
   /* ---------- S1: our post in a sellers' group, and the free-shortlist form ---------- */
   function viewPost() {
     var s = S(), b = BB.brand(), asked = s.seller.stage !== 'stranger';
-    picked = null;
     var post = h('article', { class: 'card post' },
       h('div', { class: 'row', style: 'flex-wrap:nowrap' }, BB.teamAvatar(),
         h('div', null, h('strong', null, 'Brandবন্ধু'), h('div', { class: 'tiny muted' }, L('2 ঘণ্টা আগে · গ্রুপে পোস্ট', '2h ago · posted in the group')))),
@@ -112,7 +111,6 @@
   };
 
   /* ---------- S2: the shortlist arrives in chat, without names ---------- */
-  var picked = null;   // ticked influencers on the unlocked shortlist (screen state only)
   var LETTERS = 'ABCDE';
   function anonRows(q) {
     return h('ul', { class: 'pick-list' }, q.picks.map(BB.byId).map(function (i, k) {
@@ -120,7 +118,7 @@
         h('div', { class: 'avatar avatar-sm anon', 'aria-hidden': 'true' }, '?'),
         h('span', { class: 'pick-main' }, h('strong', null, L('ইনফ্লুয়েন্সার ', 'Influencer ') + LETTERS.charAt(k)), k === 0 ? h('span', { class: 'best' }, L('সবচেয়ে মানানসই', 'Best match')) : null,
           h('span', { class: 'tiny muted' }, BB.D.platforms[i.platform] + ' · ' + BB.lbl(D.cities, i.city) + ' · ' + BB.compact(i.followers) + ' · ' + BB.pct(i.eng))),
-        h('strong', { class: 'pick-fee' }, BB.money(i.fee))));
+        h('span', { class: 'pick-side' }, h('strong', { class: 'pick-fee' }, BB.money(i.fee)), h('span', { class: 'score' }, BB.matchScore(q, i) + L('% ম্যাচ', '% match')))));
     }));
   }
   function viewChat() {
@@ -139,7 +137,7 @@
           L('নাম দেখুন: ফ্রি সাইন আপ', 'See who they are: sign up free'), icon('arrow', 18)) : null
       ] });
       if (BB.sellerAt('review')) msgs.push({ out: false, at: s.seller.signedAt, body: lines([L('সাইন আপের জন্য ধন্যবাদ! আপনার পেজটা চেক করছি, সাধারণত 1 ঘণ্টার মধ্যে।', 'Thanks for signing up! We are checking your page, usually within an hour.')]) });
-      if (BB.sellerAt('verified')) msgs.push({ out: false, at: s.seller.verifiedAt, body: [h('p', null, L('আপনার পেজ ভেরিফাই হয়েছে। অ্যাপে এখন নামগুলো দেখা যাচ্ছে।', 'Your page is verified. The names are now open in the app.')),
+      if (BB.sellerAt('verified')) msgs.push({ out: false, at: s.seller.verifiedAt, body: [h('p', null, L('আপনার পেজ ভেরিফাই হয়েছে। অ্যাপে আমাদের সাজেশন রেডি, এক ট্যাপে বুক করতে পারবেন।', 'Your page is verified. Our recommendation is ready in the app; you can book in one tap.')),
         h('a', { class: 'btn btn-sm', href: stage === 'customer' ? '#/' : '#/s/join' }, L('অ্যাপ খুলুন', 'Open the app'), icon('arrow', 16))] });
     } else {
       msgs.push({ out: false, body: h('p', { class: 'muted' }, L('টিম আপনার জন্য ইনফ্লুয়েন্সার বাছাই করছে…', 'Our team is picking influencers for you…')) });
@@ -189,34 +187,40 @@
         q ? h('div', { class: 'card' }, h('h3', null, L('আপনার শর্টলিস্ট (নাম লুকানো)', 'Your shortlist (names hidden)')), anonRows(q)) : null),
         L('চেক চলছে', 'Being checked')];
     }
-    // verified: the names open, and she picks who to book
-    if (!picked) picked = q && q.picks.length ? [q.picks[0]] : [];
-    var people = q ? q.picks.map(BB.byId) : [];
+    // verified: our system's top match is recommended; she books in one tap, or opens the others
+    var people = q ? q.picks.map(BB.byId) : [], top = people[0];
+    function book(id) {
+      if (!BB.sellerPick([id])) return;
+      BB.toast(L('এবার কী কী বলতে হবে লিখুন, দাম দেখুন।', 'Now write what to mention and see the price.'));
+      BB.go('#/brief');
+    }
+    if (!top) return [BB.emptyCard(L('শর্টলিস্ট পাওয়া যায়নি।', 'No shortlist found.'), L('চ্যাট খুলুন', 'Open the chat'), '#/s/chat'), L('সাজেশন', 'Recommendation')];
     return [h('div', { style: 'display:contents' },
       h('div', { class: 'chips' }, h('span', { class: 'chip chip-green' }, icon('shield', 14), L('ভেরিফায়েড ব্র্যান্ড', 'Verified brand'))),
-      BB.pageHead(L('আপনার শর্টলিস্ট', 'Your shortlist'), L('নামগুলো এখন খোলা। যাকে চান টিক দিন। ফোন নম্বর কখনো শেয়ার হয় না, কথা আর পেমেন্ট সব Brandবন্ধু-তে।', 'The names are open now. Tick who you want. Phone numbers are never shared; talks and payment stay in Brandবন্ধু.')),
-      h('ul', { class: 'pick-list' }, people.map(function (i, k) {
-        var on = picked.indexOf(i.id) >= 0;
-        return h('li', null, h('label', { class: 'pick' + (on ? ' on' : '') },
-          h('input', { type: 'checkbox', checked: on, onchange: function (e) {
-            var at = picked.indexOf(i.id);
-            if (e.target.checked && at < 0) picked.push(i.id); else if (!e.target.checked && at >= 0) picked.splice(at, 1);
-            BB.render();
-          } }),
-          BB.avatar(i, 'avatar-sm'),
-          h('span', { class: 'pick-main' }, h('strong', null, BB.infName(i)), k === 0 ? h('span', { class: 'best' }, L('সবচেয়ে মানানসই', 'Best match')) : null,
-            h('span', { class: 'tiny muted' }, i.handle + ' · ' + BB.D.platforms[i.platform] + ' · ' + BB.lbl(D.cities, i.city) + ' · ' + BB.compact(i.followers))),
-          h('strong', { class: 'pick-fee' }, BB.money(i.fee))));
-      })),
-      h('button', { type: 'button', class: 'btn btn-block', 'data-j': 'book-picked', disabled: !picked.length, onclick: function () {
-        if (!BB.sellerPick(picked)) return;
-        BB.toast(L('ব্রিফ লিখে দাম দেখুন।', 'Now write the brief and see the price.'));
-        BB.go('#/brief');
-      } }, L('টিক দেওয়াদের বুক করুন (' + picked.length + ' জন)', 'Book the ticked ones (' + picked.length + ')'), icon('arrow', 18))),
-      L('শর্টলিস্ট', 'Shortlist')];
+      BB.pageHead(L('আপনার জন্য সাজেশন', 'Recommended for you'), L('আমাদের সিস্টেম মিলিয়েছে, টিম চেক করেছে। আপনি শুধু বুক করুন।', 'Matched by our system, checked by our team. You just book.')),
+      h('article', { class: 'card rec-card' },
+        h('div', { class: 'row', style: 'flex-wrap:nowrap;align-items:flex-start' }, BB.avatar(top, 'avatar-lg'),
+          h('div', { style: 'min-width:0;flex:1;display:flex;flex-direction:column;gap:4px;align-items:flex-start' }, h('h2', null, BB.infName(top)),
+            h('div', { class: 'small muted' }, top.handle + ' · ' + BB.D.platforms[top.platform]),
+            h('span', { class: 'score big-score' }, BB.matchScore(q, top) + L('% ম্যাচ', '% match')))),
+        h('strong', { class: 'small' }, L('কেন', 'Why')),
+        h('div', { class: 'chips' }, BB.matchWhy(q, top).map(function (w) { return h('span', { class: 'chip' }, w); })),
+        h('div', { class: 'kv' }, h('span', { class: 'muted' }, L('ফি', 'Fee')), h('span', { class: 'big' }, BB.money(top.fee))),
+        h('button', { type: 'button', class: 'btn btn-block', 'data-j': 'book-picked', onclick: function () { book(top.id); } },
+          L(BB.infName(top).split(' ')[0] + '-কে বুক করুন', 'Book ' + top.nameEn.split(' ')[0]), icon('arrow', 18))),
+      h('details', { class: 'card more' },
+        h('summary', null, L('আরও ' + (people.length - 1) + ' জন ম্যাচ দেখুন', 'See ' + (people.length - 1) + ' other matches')),
+        h('ul', { class: 'pick-list' }, people.slice(1).map(function (i) {
+          return h('li', null, h('div', { class: 'pick' }, BB.avatar(i, 'avatar-sm'),
+            h('span', { class: 'pick-main' }, h('strong', null, BB.infName(i)),
+              h('span', { class: 'tiny muted' }, BB.matchScore(q, i) + L('% ম্যাচ · ', '% match · ') + BB.D.platforms[i.platform] + ' · ' + BB.lbl(D.cities, i.city) + ' · ' + BB.compact(i.followers))),
+            h('span', { class: 'pick-side' }, h('strong', { class: 'pick-fee' }, BB.money(i.fee)),
+              h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { book(i.id); } }, L('বুক', 'Book')))));
+        }))),
+      h('p', { class: 'tiny muted' }, L('ফোন নম্বর কখনো শেয়ার হয় না। কথা আর পেমেন্ট সব Brandবন্ধু-তে।', 'Phone numbers are never shared. Talks and payment stay in Brandবন্ধু.'))),
+      L('সাজেশন', 'Recommendation')];
   }
 
-  BB.hooks.reset.push(function () { picked = null; });
   BB.views.s = function (r) {
     var st = S().seller.stage;
     if (st === 'stranger' || r.id === 'post') return viewPost();
