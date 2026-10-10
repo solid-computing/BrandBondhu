@@ -433,7 +433,7 @@
 
   var ROLE_HOME = { seller: '#/', creator: '#/cr', team: '#/team' };
   function roleName(role) {
-    return { seller: L('সেলার', 'Seller'), creator: L('ক্রিয়েটর', 'Creator'), team: L('টিম কনসোল', 'Team console') }[role];
+    return { seller: L('সেলার', 'Seller'), creator: L('ইনফ্লুয়েন্সার', 'Influencer'), team: L('টিম কনসোল', 'Team console') }[role];
   }
   function header(role) {
     return h('header', { class: 'topbar' }, h('div', { class: 'topbar-in' + (role === 'team' ? ' wide' : '') },
@@ -983,7 +983,7 @@
       h('div', { class: 'field' }, h('span', { class: 'lbl' }, L('কার অ্যাপ দেখবেন', 'Whose app to view')),
         h('div', { class: 'seg' }, ['seller', 'creator', 'team'].map(function (rl) {
           return h('button', { type: 'button', 'aria-pressed': roleOf(route()) === rl ? 'true' : 'false', onclick: function () { dlg.close(); go(ROLE_HOME[rl]); } },
-            rl === 'creator' ? L('ক্রিয়েটর (নুসরাত)', 'Creator (Nusrat)') : roleName(rl));
+            rl === 'creator' ? L('ইনফ্লুয়েন্সার (নুসরাত)', 'Influencer (Nusrat)') : roleName(rl));
         })),
         h('span', { class: 'hint' }, L('পুরো গল্পটা ধাপে ধাপে দেখতে ', 'To see the whole story step by step, open the ') ,
           h('a', { href: './' }, L('জার্নি ডেমো খুলুন', 'journey demo')), L('।', '.'))),

@@ -19,7 +19,7 @@ both when the founder presents it and when an investor opens the link alone.
 | Supply at the start | Founder-led: our team finds influencers and messages them |
 | Our team's side | Light console, 5 screens |
 | Viewing | Guided "Play the journey" with captions, plus free clicking |
-| Words | Everyday Bangladeshi Bangla, short, easy to read; plain English |
+| Words | Everyday Bangladeshi Bangla, short, easy to read; plain English. "Influencer" wherever investors, sellers and our team look; "content creator" only on screens aimed at the influencers |
 
 ## The story (one deal: Dhaka Threads x Nusrat, ৳8,000)
 
@@ -64,7 +64,7 @@ W1 seller reports "no mention" (payout frozen), W2 team compares proof and post 
 
 ## The player (`/demo/`)
 
-- Desktop: flow diagram on the left (lanes Seller, Brandবন্ধু team, Creator; steps flow down;
+- Desktop: flow diagram on the left (lanes Seller, Brandবন্ধু team, Influencer; steps flow down;
   done steps ticked, current step glows; arrows show handoffs), money meter on top, the app on
   the right in a phone frame (seller, creator) or laptop frame (team), caption bar at the bottom
   with Back, Play and Next.

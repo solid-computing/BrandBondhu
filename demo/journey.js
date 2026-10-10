@@ -20,26 +20,26 @@
   function amt() { var x = deal(); return x ? x.d : BB.price(BB.byId(BB.CR).fee); }
 
   var PHASES = [null,
-    { bn: 'ক্রিয়েটর আনা', en: 'Bring in creators' },
+    { bn: 'ইনফ্লুয়েন্সার আনা', en: 'Bring in influencers' },
     { bn: 'সেলার আনা', en: 'Win a seller' },
     { bn: 'বুকিং আর পেমেন্ট', en: 'Book and pay' },
     { bn: 'পোস্ট আর চেক', en: 'Post and check' },
     { bn: 'টাকা আর ফলাফল', en: 'Paid, and the results' },
     { bn: 'ভুল হলে কী হয়?', en: 'What if it goes wrong?' }];
-  var LANES = { seller: { bn: 'সেলার', en: 'Seller' }, team: { bn: 'Brandবন্ধু টিম', en: 'Brandবন্ধু team' }, creator: { bn: 'ক্রিয়েটর', en: 'Creator' } };
+  var LANES = { seller: { bn: 'সেলার', en: 'Seller' }, team: { bn: 'Brandবন্ধু টিম', en: 'Brandবন্ধু team' }, creator: { bn: 'ইনফ্লুয়েন্সার', en: 'Influencer' } };
 
   // gap = hours that pass before the step happens, so times read naturally.
   var MAIN = [
     { lane: 'team', phase: 1, gap: 0,
       t: function () { return L('নুসরাতকে ইনভাইট', 'Invite Nusrat'); },
-      cap: function () { return L('শুরুতে ক্রিয়েটর আমরা নিজেরাই খুঁজি। নুসরাতের ফ্যাশন রিল দেখে টিম তাকে ইনভাইট পাঠায়।', 'At the start we find creators ourselves. Our team spots Nusrat\'s fashion reels and sends her an invite.'); },
-      why: function () { return L('আগে ক্রিয়েটর, তারপর সেলার। তাই সেলার এসেই রেডি ক্রিয়েটর পান।', 'Creators first, so every seller finds checked creators waiting.'); },
+      cap: function () { return L('শুরুতে ইনফ্লুয়েন্সার আমরা নিজেরাই খুঁজি। নুসরাতের ফ্যাশন রিল দেখে টিম তাকে ইনভাইট পাঠায়।', 'At the start we find influencers ourselves. Our team spots Nusrat\'s fashion reels and sends her an invite.'); },
+      why: function () { return L('আগে ইনফ্লুয়েন্সার, তারপর সেলার। তাই সেলার এসেই রেডি ইনফ্লুয়েন্সার পান।', 'Influencers first, so every seller finds checked influencers waiting.'); },
       route: function () { return '#/team/pipeline'; }, target: function () { return '[data-j="invite-nusrat"]'; },
       done: function (s) { return s.cr.status !== 'prospect'; },
       act: function () { BB.teamInvite(BB.CR); } },
     { lane: 'creator', phase: 1, gap: 3,
       t: function () { return L('মেসেজ পেয়ে জয়েন', 'Gets the invite, joins'); },
-      cap: function () { return L('নুসরাত মেসেজটা পেয়ে জয়েন করেন। ক্রিয়েটরদের জন্য একদম ফ্রি।', 'Nusrat reads the message and joins. It is free for creators.'); },
+      cap: function () { return L('নুসরাত মেসেজটা পেয়ে জয়েন করেন। ইনফ্লুয়েন্সারদের জন্য একদম ফ্রি।', 'Nusrat reads the message and joins. It is free for influencers.'); },
       route: function () { return '#/cr'; }, target: function () { return '[data-j="join"]'; },
       done: function (s) { return ['joined', 'review', 'verified'].indexOf(s.cr.status) >= 0; },
       act: function () { BB.crJoin(); } },
@@ -92,7 +92,7 @@
     { lane: 'creator', phase: 3, gap: 5,
       t: function () { return L('অফার নেন', 'Accepts the offer'); },
       cap: function () { return L('নুসরাত অফার দেখেন। টাকা আগেই জমা, তাই পেমেন্ট নিয়ে চিন্তা নেই। তিনি কাজটা নেন।', 'Nusrat sees the offer. The money is already in, so she knows she will be paid. She takes it.'); },
-      why: function () { return L('ক্রিয়েটরকে টাকার জন্য পিছে ঘুরতে হয় না।', 'Creators never chase a brand for payment.'); },
+      why: function () { return L('ইনফ্লুয়েন্সারকে টাকার জন্য পিছে ঘুরতে হয় না।', 'Influencers never chase a brand for payment.'); },
       route: function () { return dealRoute('offer'); }, target: function () { return '[data-j="accept"]'; },
       done: function () { return at(deal()) >= 1; },
       act: function () { BB.crAccept(S().j.dealId); } },
@@ -154,7 +154,7 @@
     { lane: 'team', phase: 6, gap: 6,
       t: function () { return L('প্রুফ দেখে সিদ্ধান্ত', 'Checks proof, decides'); },
       cap: function () { return L('টিম প্রুফের লিংক খুলে সময়টা দেখে। উল্লেখ নেই, তাই সেলার টাকা ফেরত পান। উল্লেখ থাকলে উল্টো পেমেন্ট চালু হতো।', 'Our team opens the proof link at the given time. No mention, so the seller is refunded. Had it been there, the payout would carry on.'); },
-      why: function () { return L('সেলার আর ক্রিয়েটর দুজনই সুরক্ষিত।', 'Sellers and creators are both protected.'); },
+      why: function () { return L('সেলার আর ইনফ্লুয়েন্সার দুজনই সুরক্ষিত।', 'Sellers and influencers are both protected.'); },
       route: function () { return '#/team/problems'; }, target: function () { return '[data-j="refund"]'; },
       done: function () { var x = deal(); return !!x && !!x.d.resolved; },
       act: function () { var x = deal(); BB.resolveDispute(x.c, x.d, 'refund'); } },
