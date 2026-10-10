@@ -336,7 +336,9 @@
       case 'plan': return L('আপনার অ্যাপ্রুভালের অপেক্ষা', 'Waiting for your approval');
       case 'approved': return L('ইনফ্লুয়েন্সারের পোস্টের অপেক্ষা', 'Waiting for the influencer to post');
       case 'live': return L('পোস্ট হয়েছে, ' + hold(d) + ' ঘণ্টা চলছে', 'Posted, ' + hold(d) + ' hours running');
-      case 'disputed': return L('সমস্যা জানানো হয়েছে, পেমেন্ট আটকে আছে', 'Problem reported, payout on hold');
+      case 'disputed': return { cancel: L('বাতিলের অনুরোধ, টিম দেখছে', 'Cancellation requested, our team is checking'),
+                                declined: L('ইনফ্লুয়েন্সার অফার নেননি, টিম দেখছে', 'Influencer declined, our team is checking') }[d.kind] ||
+                              L('সমস্যা জানানো হয়েছে, পেমেন্ট আটকে আছে', 'Problem reported, payout on hold');
       case 'paid': return L('শেষ, ইনফ্লুয়েন্সার টাকা পেয়েছেন', 'Done, influencer paid');
       default: return L('টাকা ফেরত', 'Refunded');
     }
@@ -360,11 +362,24 @@
     if (to === 'refunded') d.t.refundedAt = n;
     save();
   }
-  // Our team's decision on a reported problem: refund the brand, or let the payout carry on.
+  // No refund goes out directly: a cancellation, a declined offer or a problem with the post opens a
+  // case for our team, and the money stays with the payment partner until the team decides.
+  // kind: 'problem' (after posting), 'cancel' (brand asks to cancel before posting), 'declined' (influencer said no).
+  function openCase(c, d, kind, reason) {
+    d.kind = kind; d.prevStage = d.stage; d.disputeReason = reason; d.resolved = null;
+    advance(c, d, 'disputed');
+  }
+  function caseName(d) {
+    return { problem: L('পোস্ট নিয়ে সমস্যা', 'Problem with the post'), cancel: L('ব্র্যান্ড বাতিল করতে চায়', 'Brand asks to cancel'),
+             declined: L('ইনফ্লুয়েন্সার অফার নেননি', 'Influencer declined') }[d.kind || 'problem'];
+  }
+  // Our team's decision: refund the brand, or let the deal carry on from where it was.
   function resolveDispute(c, d, how) {
     d.resolved = how;
-    if (how === 'refund') advance(c, d, 'refunded');
-    else { d.verified = true; d.stage = 'live'; save(); }
+    if (how === 'refund') { advance(c, d, 'refunded'); return; }
+    d.stage = d.prevStage || 'live';
+    if (d.stage === 'live') d.verified = true;
+    save();
   }
   function fmtHint(f) {
     return { mention: L('ইনফ্লুয়েন্সার নিজের নিয়মিত ভিডিওতেই আপনার পণ্যের কথা বলেন। আলাদা ভিডিও বানাতে হয় না।', 'The influencer mentions your product inside their regular video. No separate video is made.'),
@@ -813,7 +828,7 @@
     c.deals.forEach(function (d) {
       var nm = infName(byId(d.infId));
       ev.push([d.t.fundedAt, L(nm + ': ' + money(d.total) + ' জমা (ফি ' + money(d.fee) + ' + আমাদের ফি ' + money(d.pf) + ' + ভ্যাট ' + money(d.vat) + ')', nm + ': ' + money(d.total) + ' paid in (fee ' + money(d.fee) + ' + our fee ' + money(d.pf) + ' + VAT ' + money(d.vat) + ')')]);
-      if (d.t.disputedAt) ev.push([d.t.disputedAt, L(nm + ': সমস্যা জানানো হয়েছে, পেমেন্ট আটকে আছে', nm + ': problem reported, payout on hold')]);
+      if (d.t.disputedAt) ev.push([d.t.disputedAt, nm + ': ' + caseName(d) + L(', টাকা আটকে, টিম দেখছে', ', money held while our team checks')]);
       if (d.t.paidAt) ev.push([d.t.paidAt, L(nm + ': ' + money(d.fee) + ' ইনফ্লুয়েন্সারের বিকাশ/নগদে গেছে', nm + ': ' + money(d.fee) + ' paid out to the influencer\'s wallet')]);
       if (d.t.refundedAt) ev.push([d.t.refundedAt, L(nm + ': পোস্ট হয়নি, ' + money(d.total) + ' পুরো ফেরত', nm + ': no post, ' + money(d.total) + ' refunded in full')]);
     });
@@ -823,7 +838,7 @@
 
   function dealCard(c, d) {
     var i = byId(d.infId), n = now();
-    var cur = STEPS.indexOf(d.stage === 'disputed' ? 'live' : d.stage);
+    var cur = STEPS.indexOf(d.stage === 'disputed' ? (d.prevStage || 'live') : d.stage);
     var steps = d.stage === 'refunded' ? null : h('div', null,
       h('ol', { class: 'dots', 'aria-label': L('ধাপ ' + (cur + 1) + '/6: ' + stepLabel(STEPS[cur], c), 'Step ' + (cur + 1) + ' of 6: ' + stepLabel(STEPS[cur], c)) },
         STEPS.map(function (s, k) {
@@ -849,9 +864,11 @@
   }
   function cancelBtn(c, d) {
     return h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () {
-      if (!confirm(L('বাতিল করলে ' + money(d.total) + ' পুরো ফেরত পাবেন। বাতিল করবেন?', 'Cancel and get ' + money(d.total) + ' back in full?'))) return;
-      advance(c, d, 'refunded'); toast(L('বাতিল হয়েছে, পুরো টাকা ফেরত।', 'Cancelled, full refund.')); render();
-    } }, L('বাতিল করুন, পুরো টাকা ফেরত নিন', 'Cancel and get a full refund'));
+      if (!confirm(L('বাতিলের অনুরোধ পাঠাবেন? টিম ইনফ্লুয়েন্সারের সাথে কথা বলে দেখবে। কাজ শুরু না হলে ' + money(d.total) + ' পুরো ফেরত পাবেন।',
+                     'Ask our team to cancel? We check with the influencer first. If work has not started, you get ' + money(d.total) + ' back in full.'))) return;
+      openCase(c, d, 'cancel', L('ব্র্যান্ড পোস্টের আগে বাতিল করতে চায়', 'The brand asked to cancel before posting'));
+      toast(L('অনুরোধ টিমের কাছে গেছে। সিদ্ধান্ত না হওয়া পর্যন্ত টাকা জমা থাকবে।', 'Sent to our team. The money stays held until they decide.')); render();
+    } }, L('বাতিল করতে চাই', 'Ask to cancel'));
   }
   function copyBtn(text) {
     return h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-label': L('কপি করুন: ' + text, 'Copy: ' + text), onclick: function () {
@@ -936,7 +953,7 @@
                 h('strong', null, L('উল্লেখটা ঠিক আছে কি?', 'Is the mention right?')),
                 h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-sm', 'data-j': 'confirm-mention', onclick: function () { d.verified = true; save(); toast(L('যাচাই হয়েছে। ধন্যবাদ।', 'Checked. Thank you.')); render(); } }, icon('check', 16), L('ঠিক আছে, দেখেছি', 'Looks right'))),
                 h('div', { class: 'field' }, h('span', { class: 'lbl' }, L('সমস্যা থাকলে', 'If there is a problem')), sel,
-                  h('button', { type: 'button', class: 'btn btn-danger btn-sm', 'data-j': 'report', onclick: function () { d.disputeReason = sel.value; advance(c, d, 'disputed'); toast(L('সমস্যা জানানো হয়েছে। পেমেন্ট আটকে আছে।', 'Problem reported. Payout is on hold.')); render(); } }, icon('flag', 16), L('সমস্যা জানান', 'Report a problem')))),
+                  h('button', { type: 'button', class: 'btn btn-danger btn-sm', 'data-j': 'report', onclick: function () { openCase(c, d, 'problem', sel.value); toast(L('সমস্যা জানানো হয়েছে। পেমেন্ট আটকে আছে।', 'Problem reported. Payout is on hold.')); render(); } }, icon('flag', 16), L('সমস্যা জানান', 'Report a problem')))),
           h('dl', { class: 'stats' },
             h('div', null, h('dt', null, L('রিচ', 'Reach')), h('dd', null, num(m.reach))),
             h('div', null, h('dt', null, L('ক্লিক', 'Clicks')), h('dd', null, num(m.clicks))),
@@ -945,15 +962,21 @@
           h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো শর্টকাট', 'Demo shortcut')),
             h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { fastForward(hh); } }, icon('clock', 16), L(hh + ' ঘণ্টা এগিয়ে যান', 'Fast-forward ' + hh + ' hours'))));
       }
-      case 'disputed':
-        return h('div', { class: 'panel' }, h('strong', null, L('সমস্যা জানানো হয়েছে', 'Problem reported')),
-          h('p', null, L('কারণ: ' + (d.disputeReason || '') + '। আমাদের টিম প্রুফ আর পোস্ট দেখছে, পেমেন্ট আটকে আছে।', 'Reason: ' + (d.disputeReason || '') + '. Our team is checking the proof and the post. The payout is on hold.')),
+      case 'disputed': {
+        var words = {
+          problem: [L('সমস্যা জানানো হয়েছে', 'Problem reported'), L('কারণ: ' + (d.disputeReason || '') + '। আমাদের টিম প্রুফ আর পোস্ট দেখছে, পেমেন্ট আটকে আছে।', 'Reason: ' + (d.disputeReason || '') + '. Our team is checking the proof and the post. The payout is on hold.')],
+          cancel: [L('বাতিলের অনুরোধ গেছে', 'Cancellation requested'), L('টিম ইনফ্লুয়েন্সারের সাথে কথা বলছে। কাজ শুরু না হলে ' + money(d.total) + ' পুরো ফেরত পাবেন। ততক্ষণ টাকা পেমেন্ট পার্টনারের কাছে জমা।', 'Our team is checking with the influencer. If work has not started, you get ' + money(d.total) + ' back in full. Until then the money stays with the payment partner.')],
+          declined: [L('ইনফ্লুয়েন্সার অফারটা নেননি', 'The influencer said no'), L('টিম একটু দেখে আপনাকে অন্য একজন সাজেশন দেবে, নয়তো টাকা ফেরত দেবে। আপনার টাকা নিরাপদে জমা আছে।', 'After a quick check, our team will offer you another match or refund you. Your money is safe with the payment partner.')]
+        }[d.kind || 'problem'];
+        var demoBtns = d.kind === 'declined'
+          ? [h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { resolveDispute(c, d, 'refund'); toast(L('টিম চেক করে টাকা ফেরত দিয়েছে।', 'Checked by our team: refunded.')); render(); } }, L('চেক করে টাকা ফেরত', 'Checked: refund'))]
+          : [h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { resolveDispute(c, d, 'refund'); toast(L('টিম চেক করে টাকা ফেরত দিয়েছে।', 'Checked by our team: refunded.')); render(); } }, d.kind === 'cancel' ? L('চেক করে টাকা ফেরত', 'Checked: refund') : L('উল্লেখ ছিল না: পুরো টাকা ফেরত', 'No mention: full refund')),
+             h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { resolveDispute(c, d, 'resume'); toast(L('ডিল আবার চলছে।', 'The deal carries on.')); render(); } }, d.kind === 'cancel' ? L('কাজ শুরু হয়ে গেছে: ডিল চলবে', 'Work had started: deal carries on') : L('উল্লেখ ঠিক ছিল: পেমেন্ট চালু', 'Mention was fine: resume payout'))];
+        return h('div', { class: 'panel' }, h('strong', null, words[0]), h('p', null, words[1]),
           proofCard(c, d),
           WORLD === 'journey' ? h('p', { class: 'tiny muted' }, L('আমাদের টিম কনসোল থেকে সিদ্ধান্ত নেয়।', 'Our team decides this in the team console.')) :
-          h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো শর্টকাট: আমাদের টিমের সিদ্ধান্ত', 'Demo shortcut: our team\'s decision')),
-            h('div', { class: 'row' },
-              h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { resolveDispute(c, d, 'refund'); toast(L('উল্লেখ ছিল না। পুরো টাকা ফেরত।', 'No mention found. Full refund.')); render(); } }, L('উল্লেখ ছিল না: পুরো টাকা ফেরত', 'No mention: full refund')),
-              h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { resolveDispute(c, d, 'resume'); toast(L('উল্লেখ ঠিক ছিল। পেমেন্ট আবার চালু।', 'The mention was fine. Payout resumed.')); render(); } }, L('উল্লেখ ঠিক ছিল: পেমেন্ট চালু', 'Mention was fine: resume payout')))));
+          h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো শর্টকাট: আমাদের টিমের সিদ্ধান্ত', 'Demo shortcut: our team\'s decision')), h('div', { class: 'row' }, demoBtns)));
+      }
       case 'paid': {
         var fm = d.final, cpo = (d.fee + d.pf) / fm.orders;
         return h('div', { class: 'panel' }, h('strong', null, L('ডিল শেষ', 'Deal finished')),
@@ -966,7 +989,8 @@
       }
       default:
         return h('div', { class: 'panel', 'data-j': 'refund-done' }, h('strong', null, L('পুরো টাকা ফেরত', 'Full refund')),
-          h('p', null, L(money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')),
+          h('p', null, d.kind ? L('টিম চেক করার পর ' + money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', 'After our team\'s check, ' + money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')
+                              : L(money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')),
           h('div', { class: 'row' }, h('a', { class: 'btn btn-sm', href: '#/find' }, L('অন্য ইনফ্লুয়েন্সার খুঁজুন', 'Find another influencer'))));
     }
   }
@@ -1018,7 +1042,7 @@
     save: save, byId: byId, byBrand: byBrand, brand: brand, campaignById: campaignById, findDeal: findDeal, isMember: isMember,
     now: now, L: L, txt: txt, lbl: lbl, infName: infName, brandName: brandName, money: money, num: num, compact: compact, pct: pct,
     dateStr: dateStr, ago: ago, avatar: avatar, audText: audText, metrics: metrics, advance: advance, planText: planText, planWord: planWord,
-    stageText: stageText, stageTone: stageTone, resolveDispute: resolveDispute, fundCampaign: fundCampaign, moveClock: moveClock, fastForward: fastForward,
+    stageText: stageText, stageTone: stageTone, resolveDispute: resolveDispute, openCase: openCase, caseName: caseName, fundCampaign: fundCampaign, moveClock: moveClock, fastForward: fastForward,
     pageHead: pageHead, emptyCard: emptyCard, kv: kv, statCard: statCard, field: field, toast: toast, go: go, render: render, route: route, roleOf: roleOf,
     proofCard: proofCard, codeRows: codeRows, copyBtn: copyBtn, tabBar: tabBar, sum: sum, toggleLang: toggleLang,
     setLang: function (l) { if (l !== state.lang) { state.lang = l; save(); render(); } }
