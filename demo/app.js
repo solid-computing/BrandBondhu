@@ -1,5 +1,11 @@
-/* Brandবন্ধু demo, Stage 1: the seller journey.
+/* Brandবন্ধু demo: core and seller views.
    No backend. All data lives in this browser (localStorage). Everything shown is fictional.
+   Creator, team and outreach views live in creator.js, team.js and outreach.js; the guided
+   journey lives in journey.js. They all use the helpers exported on window.BB at the end.
+
+   Two "worlds": the standalone demo (bb-demo-v3) and the journey (bb-journey-v1, opened by the
+   player at /demo/ as app.html?world=journey&embed=1), which starts before the seller or Nusrat
+   have joined.
 
    Deal flow (how sponsored content really works): the brand lists what to mention, the influencer
    shares a short plan (no finished video), the brand approves it, the influencer posts it inside their
@@ -9,8 +15,14 @@
   'use strict';
 
   var D = window.BB_DATA;
+  var BB = window.BB = { views: {}, tabs: {} };
   var H = 3600000;                        // one hour in ms
-  var KEY = 'bb-demo-v2';
+  var QS = new URLSearchParams(location.search);
+  var WORLD = QS.get('world') === 'journey' ? 'journey' : 'demo';
+  var EMBED = QS.get('embed') === '1' && window.parent !== window;
+  var KEY = WORLD === 'journey' ? 'bb-journey-v1' : 'bb-demo-v3';
+  var CR = 'nusrat';                      // the creator whose app the creator views show
+  var CR_FEE = D.influencers.filter(function (i) { return i.id === CR; })[0].fee;   // her fee in the data, before she changes it
   var PF_RATE = 0.15, PF_MIN = 500, VAT_RATE = 0.15;
   var MAX_PICK = 5;
   var HELD = ['funded', 'accepted', 'plan', 'approved', 'live', 'disputed'];
@@ -137,13 +149,45 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 2 && Array.isArray(s.campaigns)) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 3 && s.world === WORLD && Array.isArray(s.campaigns)) return s; }
     } catch (e) { /* private mode etc: fall through to a fresh seed */ }
     return seed();
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* in-memory only */ } }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* in-memory only */ }
+    hooks.save.forEach(function (f) { f(); });
+  }
+  var hooks = { save: [], render: [], reset: [] };
+  function syncFee() { byId(CR).fee = state.cr.fee || CR_FEE; }
 
-  function seed() {
+  function seed() { return WORLD === 'journey' ? seedJourney() : seedDemo(); }
+
+  // People and requests our team works with, shared by both worlds.
+  function seedTeam(T, s) {
+    s.prospects = D.prospects.map(function (p) { return Object.assign({}, p, { at: T(p.ago) }); });
+    s.requests = [
+      { id: 'r-mezban', brandId: 'chattala-bites', budget: 'b20', phone: '018•• •••374', at: T(60), status: 'converted', picks: ['rafi', 'tahmid', 'farzana', 'rakib'] },
+      { id: 'r-surma', brandId: 'sylhet-glow', budget: 'b20', phone: '017•• •••905', at: T(40), status: 'converted', picks: ['priya', 'tasnim', 'tania', 'lamia', 'nazia'] }
+    ];
+    return s;
+  }
+  function baseState(lang) {
+    return { v: 3, world: WORLD, lang: lang, offset: 0, brandId: 'dhaka-threads', shortlist: [], brief: NEW_BRIEF(), campaigns: [],
+             cr: { status: 'verified', connected: true, formats: ['mention', 'reel', 'story'], wallet: '017•• •••219', rating: 4.8, jobs: 31 },
+             seller: { stage: 'customer' }, prospects: [], requests: [], j: { dealId: null, campaignId: null, seen: 0, seenW: 0 } };
+  }
+  // The journey world: nobody has joined yet. Other brands' campaigns run in the background.
+  function seedJourney() {
+    var demo = seedDemo(), t0 = Date.now();
+    var lang = /^bn/i.test(navigator.language || '') ? 'bn' : 'en';
+    var s = baseState(lang);
+    s.campaigns = demo.campaigns.filter(function (c) { return c.brandId !== 'dhaka-threads'; });
+    s.cr = { status: 'prospect', connected: false, formats: ['mention', 'reel', 'story'], wallet: '017•• •••219', rating: 0, jobs: 0 };
+    s.seller = { stage: 'stranger' };
+    return seedTeam(function (hoursAgo) { return t0 - hoursAgo * H; }, s);
+  }
+
+  function seedDemo() {
     var t0 = Date.now();
     var T = function (hoursAgo) { return t0 - hoursAgo * H; };
     var camps = [];
@@ -198,13 +242,27 @@
       ['tasnim', 'funded', [2]]
     ]);
 
-    return { v: 2, lang: 'bn', offset: 0, brandId: 'dhaka-threads', shortlist: [], brief: NEW_BRIEF(), campaigns: camps };
+    var s = baseState('bn');
+    s.campaigns = camps;
+    s.requests = [];
+    seedTeam(T, s);
+    s.requests.push({ id: 'r-threads', brandId: 'dhaka-threads', budget: 'b50', phone: '018•• •••482', at: T(150), status: 'converted', picks: ['nusrat', 'mim', 'jannat', 'rima', 'anika'] });
+    return s;
   }
 
   function byId(id) { return D.influencers.filter(function (i) { return i.id === id; })[0]; }
   function byBrand(id) { return D.brands.filter(function (b) { return b.id === id; })[0]; }
   function brand() { return byBrand(state.brandId) || D.brands[0]; }
   function campaignById(id) { return state.campaigns.filter(function (c) { return c.id === id; })[0]; }
+  // Nusrat is only in the directory once our team has verified her; everyone else already is.
+  function isMember(id) { return id !== CR || state.cr.status === 'verified'; }
+  function findDeal(id) {
+    for (var k = 0; k < state.campaigns.length; k++) {
+      var c = state.campaigns[k], d = c.deals.filter(function (x) { return x.id === id; })[0];
+      if (d) return { c: c, d: d };
+    }
+    return null;
+  }
 
   function now() { return Date.now() + state.offset; }
   function L(bn, en) { return state.lang === 'bn' ? bn : en; }
@@ -301,6 +359,12 @@
     if (to === 'refunded') d.t.refundedAt = n;
     save();
   }
+  // Our team's decision on a reported problem: refund the brand, or let the payout carry on.
+  function resolveDispute(c, d, how) {
+    d.resolved = how;
+    if (how === 'refund') advance(c, d, 'refunded');
+    else { d.verified = true; d.stage = 'live'; save(); }
+  }
   function fmtHint(f) {
     return { mention: L('ইনফ্লুয়েন্সার নিজের নিয়মিত ভিডিওতেই আপনার পণ্যের কথা বলেন। আলাদা ভিডিও বানাতে হয় না।', 'The influencer mentions your product inside their regular video. No separate video is made.'),
              reel: L('আপনার পণ্য নিয়ে আলাদা রিল বা পোস্ট। চাইলে ড্রাফট আগে দেখতে পারেন।', 'A separate reel or post about your product. You can ask to see a draft first.'),
@@ -329,16 +393,23 @@
 
   function route() {
     var parts = (location.hash.replace(/^#\/?/, '') || '').split('/');
-    return { name: parts[0] || 'home', id: parts[1] || null };
+    return { name: parts[0] || 'home', id: parts[1] || null, parts: parts };
   }
   function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
 
+  function roleOf(r) { return r.name === 'cr' ? 'creator' : r.name === 'team' ? 'team' : 'seller'; }
   function render() {
     tick();
-    var r = route(), key = r.name + '/' + (r.id || '');
+    var r = route(), key = r.parts.join('/');
     var same = key === lastRoute, y = window.scrollY;
-    var view, title;
-    switch (r.name) {
+    var view, title, role = roleOf(r);
+    // A seller who has not signed up yet only has the group post and the chat.
+    if (role === 'seller' && state.seller.stage !== 'customer' && r.name !== 's') {
+      r = { name: 's', id: state.seller.stage === 'stranger' ? 'post' : 'chat', parts: ['s', state.seller.stage === 'stranger' ? 'post' : 'chat'] };
+    }
+    var bar = null;   // views outside our app (social feed, chats) bring their own top bar
+    if (BB.views[r.name]) { var out = BB.views[r.name](r); view = out[0]; title = out[1]; bar = out[2] || null; }
+    else switch (r.name) {
       case 'find': view = viewFind(); title = L('ইনফ্লুয়েন্সার খুঁজুন', 'Find influencers'); break;
       case 'i': view = viewProfile(r.id); title = L('প্রোফাইল', 'Profile'); break;
       case 'brief': view = viewBrief(); title = L('ব্রিফ আর দাম', 'Brief and price'); break;
@@ -347,31 +418,45 @@
       default: view = viewHome(); title = L('হোম', 'Home');
     }
     var app = $('#app');
-    app.replaceChildren(header(), h('div', { class: 'banner-wrap' }, h('div', { class: 'banner', role: 'note' }, icon('shield'),
+    app.replaceChildren.apply(app, [bar || header(role), EMBED ? null : h('div', { class: 'banner-wrap' }, h('div', { class: 'banner', role: 'note' }, icon('shield'),
       L('ডেমো ভার্সন: সব ইনফ্লুয়েন্সার আর ব্র্যান্ড কাল্পনিক, আসল টাকা লেনদেন হয় না। ডেটা শুধু আপনার ব্রাউজারে থাকে।',
         'Demo version: every influencer and brand is fictional, no real money moves, and your data stays in this browser.'))),
-      tabs(r), h('main', { id: 'main', class: 'container', tabindex: '-1' }, view));
+      tabs(r, role), h('main', { id: 'main', class: 'container' + (role === 'team' ? ' wide' : ''), tabindex: '-1' }, view)].filter(Boolean));
+    document.body.setAttribute('data-role', role);
     document.documentElement.lang = state.lang;
     document.title = 'Brandবন্ধু ' + L('ডেমো', 'Demo') + ' — ' + title;
     if (same) window.scrollTo(0, y); else window.scrollTo(0, 0);
     if (!same || document.activeElement === document.body) { var m = $('#main'); if (m) m.focus({ preventScroll: true }); }
     lastRoute = key;
+    hooks.render.forEach(function (f) { f(r, same); });
   }
 
-  function header() {
-    return h('header', { class: 'topbar' }, h('div', { class: 'topbar-in' },
-      h('a', { href: '#/', class: 'logo', 'aria-label': L('Brandবন্ধু ডেমো হোম', 'Brandবন্ধু demo home') },
+  var ROLE_HOME = { seller: '#/', creator: '#/cr', team: '#/team' };
+  function roleName(role) {
+    return { seller: L('সেলার', 'Seller'), creator: L('ক্রিয়েটর', 'Creator'), team: L('টিম কনসোল', 'Team console') }[role];
+  }
+  function header(role) {
+    return h('header', { class: 'topbar' }, h('div', { class: 'topbar-in' + (role === 'team' ? ' wide' : '') },
+      h('a', { href: ROLE_HOME[role], class: 'logo', 'aria-label': L('Brandবন্ধু ডেমো হোম', 'Brandবন্ধু demo home') },
         h('span', { 'aria-hidden': 'true', style: 'display:inline-flex', html: '<svg width="32" height="32" viewBox="0 0 40 40"><circle cx="15" cy="20" r="12" fill="#C2185B"/><circle cx="25" cy="20" r="12" fill="#F5B700" fill-opacity="0.92"/></svg>' }),
         h('span', { class: 'logo-t' }, 'Brand', h('span', { class: 'logo-b' }, 'বন্ধু')),
-        h('span', { class: 'pill' }, L('ডেমো', 'Demo'))),
-      h('div', { class: 'top-actions' },
+        h('span', { class: 'pill' }, EMBED ? roleName(role) : L('ডেমো', 'Demo'))),
+      EMBED ? null : h('div', { class: 'top-actions' },
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', lang: state.lang === 'bn' ? 'en' : 'bn', onclick: toggleLang }, state.lang === 'bn' ? 'English' : 'বাংলা'),
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-label': L('ডেমো টুলস', 'Demo tools'), onclick: openTools }, icon('tools'), h('span', { class: 'hide-sm' }, L('ডেমো টুলস', 'Demo tools'))))));
   }
-  function tabs(r) {
+  function tabs(r, role) {
+    if (role !== 'seller') return BB.tabs[role] ? BB.tabs[role](r) : null;
+    if (r.name === 's') return null;
     var cur = { home: 'home', c: 'home', find: 'find', i: 'find', brief: 'brief', pay: 'brief' }[r.name] || 'home';
     var defs = [['#/', 'home', L('হোম', 'Home'), 'home'], ['#/find', 'find', L('খুঁজুন', 'Find'), 'search'], ['#/brief', 'brief', L('শর্টলিস্ট', 'Shortlist'), 'list']];
+    return tabBar(defs, cur);
+  }
+  // defs: [href, key, label, icon, badge?]
+  function tabBar(defs, cur) {
     return h('nav', { class: 'tabs', 'aria-label': L('মূল মেনু', 'Main') }, defs.map(function (t) {
+      if (t[1] !== 'brief') return h('a', { href: t[0], 'aria-current': t[1] === cur ? 'page' : null }, icon(t[3], 22), t[2],
+        t[4] ? h('span', { class: 'count' }, t[4]) : null);
       return h('a', { href: t[0], 'aria-current': t[1] === cur ? 'page' : null }, icon(t[3], 22), t[2],
         t[1] === 'brief' && state.shortlist.length ? h('span', { class: 'count', 'aria-label': L(state.shortlist.length + ' জন বাছা হয়েছে', state.shortlist.length + ' selected') }, state.shortlist.length) : null);
     }));
@@ -482,7 +567,7 @@
   function filtered() {
     var f = ui.find;
     return D.influencers.filter(function (i) {
-      return (f.platform === 'all' || i.platform === f.platform) && (f.cat === 'all' || i.category === f.cat) &&
+      return isMember(i.id) && (f.platform === 'all' || i.platform === f.platform) && (f.cat === 'all' || i.category === f.cat) &&
              (f.city === 'all' || i.city === f.city) && (!f.maxFee || i.fee <= f.maxFee);
     }).sort(SORTERS[f.sort]);
   }
@@ -610,7 +695,7 @@
             h('span', { class: 'row', style: 'flex-wrap:nowrap' }, avatar(i, 'avatar-sm'), h('span', null, infName(i), h('span', { class: 'tiny muted', style: 'display:block' }, D.platforms[i.platform] + ' · ' + money(i.fee)))),
             h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-label': L(infName(i) + ' বাদ দিন', 'Remove ' + infName(i)), onclick: function () { togglePick(i.id); render(); } }, icon('x', 16)));
         }))),
-      h('form', { class: 'card', onsubmit: function (e) { e.preventDefault(); go('#/pay'); } },
+      h('form', { class: 'card', onsubmit: function (e) { e.preventDefault(); br.ready = true; save(); go('#/pay'); } },
         h('h3', null, L('ব্রিফ', 'Brief')),
         field('b-title', L('ক্যাম্পেইনের নাম', 'Campaign name'), h('input', { id: 'b-title', type: 'text', value: br.title, placeholder: L('যেমন: ঈদ কালেকশন', 'e.g. Eid collection'), maxlength: 60, oninput: bind('title') })),
         field('b-product', L('কী প্রচার করবেন', 'What to promote'), h('input', { id: 'b-product', type: 'text', required: true, value: br.product, maxlength: 90, oninput: bind('product') })),
@@ -627,7 +712,7 @@
         field('b-notes', L('যা যা বলতে হবে (টকিং পয়েন্ট)', 'Key points to mention'), h('textarea', { id: 'b-notes', maxlength: 300, placeholder: L('যেমন: ঈদের আগে ডেলিভারি, ক্যাশ অন ডেলিভারি আছে, কোডটা মুখে বলবেন', 'e.g. delivery before Eid, cash on delivery available, say the code out loud'), oninput: bind('notes') }, br.notes), L('ঐচ্ছিক', 'Optional')),
         h('h3', null, L('দাম', 'Price')), priceHost,
         h('p', { class: 'small muted' }, L('এই টাকা ইনফ্লুয়েন্সারদের কাছে এখনই যায় না। পোস্ট ' + holdOf(br.format) + ' ঘণ্টা থাকার পর যায়।', 'This money does not go to the influencers yet. It is released after the post has stayed up for ' + holdOf(br.format) + ' hours.')),
-        h('button', { class: 'btn btn-block', type: 'submit' }, L('পেমেন্টে এগিয়ে যান', 'Continue to payment'), icon('arrow', 18))));
+        h('button', { class: 'btn btn-block', type: 'submit', 'data-j': 'to-pay' }, L('পেমেন্টে এগিয়ে যান', 'Continue to payment'), icon('arrow', 18))));
   }
   function field(id, label, control, hint) {
     return h('div', { class: 'field' }, h('label', { for: id }, label), control, hint ? h('span', { class: 'hint' }, hint) : null);
@@ -649,11 +734,18 @@
         [['wallet', L('মোবাইল ওয়ালেট', 'Mobile wallet')], ['card', L('কার্ড', 'Card')]].map(function (m) {
           return h('label', { class: 'radio' }, h('input', { type: 'radio', name: 'm', value: m[0], checked: m[0] === method, onchange: function () { method = m[0]; } }), icon('wallet', 20), m[1]);
         })),
-      h('button', { class: 'btn btn-yellow btn-block', type: 'button', onclick: createCampaign }, icon('lock', 18), L(money(p.total) + ' জমা দিন (ডেমো)', 'Pay ' + money(p.total) + ' (demo)')));
+      h('button', { class: 'btn btn-yellow btn-block', type: 'button', 'data-j': 'pay', onclick: createCampaign }, icon('lock', 18), L(money(p.total) + ' জমা দিন (ডেমো)', 'Pay ' + money(p.total) + ' (demo)')));
   }
   function createCampaign() {
+    var id = fundCampaign();
+    if (!id) return;
+    toast(L('টাকা জমা হয়েছে। ইনফ্লুয়েন্সারদের কাছে অনুরোধ পাঠানো হয়েছে।', 'Funded. Requests have been sent to the influencers.'));
+    go('#/c/' + id);
+  }
+  // Turns the shortlist and brief into a funded campaign. Returns the campaign id.
+  function fundCampaign() {
     var b = brand(), sel = state.shortlist.map(byId), br = state.brief;
-    if (!sel.length) return;
+    if (!sel.length) return null;
     var id = 'c-' + Date.now().toString(36), n = now(), hh = holdOf(br.format);
     var deals = sel.map(function (i) {
       var p = price(i.fee);
@@ -663,9 +755,12 @@
     state.campaigns.unshift({ id: id, brandId: b.id, title: br.title.trim() || { bn: 'নতুন ক্যাম্পেইন', en: 'New campaign' }, product: br.product, format: br.format,
       minSec: br.minSec, preview: br.format === 'reel' && !!br.preview, notes: br.notes, offer: br.offer, days: br.days, createdAt: n, deals: deals });
     state.shortlist = []; state.brief = NEW_BRIEF();
+    var mine = deals.filter(function (d) { return d.infId === CR; })[0];
+    // The journey's deal ends on the landing page's numbers for Nusrat (40 orders, ৳230 per order).
+    if (WORLD === 'journey' && mine && !state.j.dealId) { state.j.dealId = mine.id; state.j.campaignId = id; mine.final = { reach: 36560, clicks: 900, orders: 40 }; }
+    state.requests.forEach(function (q) { if (q.brandId === b.id && q.status === 'sent') q.status = 'converted'; });
     save();
-    toast(L('টাকা জমা হয়েছে। ইনফ্লুয়েন্সারদের কাছে অনুরোধ পাঠানো হয়েছে।', 'Funded. Requests have been sent to the influencers.'));
-    go('#/c/' + id);
+    return id;
   }
 
   /* ---------- views: campaign ---------- */
@@ -693,16 +788,22 @@
         statCard(L('এখনো জমা আছে', 'Still held'), money(held), L('লাইসেন্সপ্রাপ্ত পেমেন্ট পার্টনারের কাছে', 'With the licensed payment partner')),
         statCard(L('ইনফ্লুয়েন্সারদের দেওয়া হয়েছে', 'Paid to influencers'), money(released)),
         statCard(L('ফেরত পেয়েছেন', 'Refunded to you'), money(refunded))),
-      counted.length ? h('div', { class: 'card' }, h('h3', null, L('এখন পর্যন্ত ফলাফল', 'Results so far')),
+      counted.length ? h('div', { class: 'card', 'data-j': 'results' }, h('h3', null, allDone ? L('ফলাফল', 'Results') : L('এখন পর্যন্ত ফলাফল', 'Results so far')),
         h('dl', { class: 'stats' },
           h('div', null, h('dt', null, L('রিচ', 'Reach')), h('dd', null, num(m.reach))),
           h('div', null, h('dt', null, L('লিংকে ক্লিক', 'Link clicks')), h('dd', null, num(m.clicks))),
           h('div', null, h('dt', null, L('কোড দিয়ে অর্ডার', 'Orders via codes')), h('dd', null, num(m.orders)))),
-        allDone && m.orders ? h('div', { class: 'kv' }, h('span', { class: 'muted' }, L('প্রতি অর্ডারে খরচ (আমাদের ফি সহ)', 'Cost per order (incl. our fee)')), h('strong', { class: 'big' }, money(spend / m.orders))) : null) : null,
+        allDone && m.orders ? h('div', { class: 'kv' }, h('span', { class: 'muted' }, L('প্রতি অর্ডারে খরচ (আমাদের ফি সহ)', 'Cost per order (incl. our fee)')), h('strong', { class: 'big' }, money(spend / m.orders))) : null,
+        allDone && paidDeals.length ? h('button', { type: 'button', class: 'btn btn-yellow', style: 'align-self:flex-start', onclick: function () { runAgain(c); } }, icon('refresh', 18), L('একই ইনফ্লুয়েন্সারদের নিয়ে আবার চালান', 'Run it again with the same influencers')) : null) : null,
       h('div', { class: 'grid' }, ds.map(function (d) { return dealCard(c, d); })),
       h('div', { class: 'card' }, h('h3', null, L('টাকার হিসাব', 'Money trail')), ledger(c)));
   }
   function sum(arr, k) { return arr.reduce(function (s, d) { return s + d[k]; }, 0); }
+  function runAgain(c) {
+    state.shortlist = c.deals.filter(function (d) { return d.stage === 'paid'; }).map(function (d) { return d.infId; }).slice(0, MAX_PICK);
+    state.brief = Object.assign(NEW_BRIEF(), { title: '', product: txt(c.product), format: c.format, minSec: c.minSec || 30, notes: c.notes || '', offer: c.offer, days: c.days });
+    save(); go('#/brief');
+  }
 
   function ledger(c) {
     var ev = [];
@@ -739,6 +840,7 @@
   }
 
   function shortcut(btnText, fn) {
+    if (WORLD === 'journey') return h('p', { class: 'tiny muted' }, L('এটা ইনফ্লুয়েন্সার নিজের অ্যাপ থেকে করেন।', 'The influencer does this in their own app.'));
     return h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো শর্টকাট: আসলে ইনফ্লুয়েন্সার এটা করেন', 'Demo shortcut: in real life the influencer does this')),
       h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: fn }, btnText));
   }
@@ -805,7 +907,7 @@
             h('p', { class: 'cap' }, caption(c, d))) : planCard(c, d),
           codeRows(d),
           h('div', { class: 'row' },
-            h('button', { type: 'button', class: 'btn', onclick: function () { advance(c, d, 'approved'); toast(L('অ্যাপ্রুভ হয়েছে। ইনফ্লুয়েন্সার এবার পোস্ট করবেন।', 'Approved. The influencer will now post.')); render(); } }, icon('check', 18), L('অ্যাপ্রুভ করুন', 'Approve')),
+            h('button', { type: 'button', class: 'btn', 'data-j': 'approve-plan', onclick: function () { advance(c, d, 'approved'); toast(L('অ্যাপ্রুভ হয়েছে। ইনফ্লুয়েন্সার এবার পোস্ট করবেন।', 'Approved. The influencer will now post.')); render(); } }, icon('check', 18), L('অ্যাপ্রুভ করুন', 'Approve')),
             d.revised ? null : h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { d.changeRequested = true; advance(c, d, 'accepted'); toast(L('একটা বদলের অনুরোধ পাঠানো হয়েছে।', 'Change request sent.')); render(); } }, L('একটা বদল চাই', 'Ask for one change'))),
           h('p', { class: 'tiny muted' }, d.revised ? L('এই ডিলে একবারই বদল চাওয়া যায়।', 'You can ask for one change per deal.')
             : L('ইনফ্লুয়েন্সার নিজের স্টাইলেই বলেন। আপনি শুধু কী বলতে হবে তা ঠিক করেন।', 'Influencers keep their own style. You only agree what gets mentioned.')));
@@ -829,9 +931,9 @@
           d.verified ? h('span', { class: 'chip chip-green', style: 'align-self:flex-start' }, icon('check', 14), L('আপনি উল্লেখ যাচাই করেছেন', 'You checked the mention'))
             : h('div', { class: 'panel attn' },
                 h('strong', null, L('উল্লেখটা ঠিক আছে কি?', 'Is the mention right?')),
-                h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-sm', onclick: function () { d.verified = true; save(); toast(L('যাচাই হয়েছে। ধন্যবাদ।', 'Checked. Thank you.')); render(); } }, icon('check', 16), L('ঠিক আছে, দেখেছি', 'Looks right'))),
+                h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-sm', 'data-j': 'confirm-mention', onclick: function () { d.verified = true; save(); toast(L('যাচাই হয়েছে। ধন্যবাদ।', 'Checked. Thank you.')); render(); } }, icon('check', 16), L('ঠিক আছে, দেখেছি', 'Looks right'))),
                 h('div', { class: 'field' }, h('span', { class: 'lbl' }, L('সমস্যা থাকলে', 'If there is a problem')), sel,
-                  h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { d.disputeReason = sel.value; advance(c, d, 'disputed'); toast(L('সমস্যা জানানো হয়েছে। পেমেন্ট আটকে আছে।', 'Problem reported. Payout is on hold.')); render(); } }, icon('flag', 16), L('সমস্যা জানান', 'Report a problem')))),
+                  h('button', { type: 'button', class: 'btn btn-danger btn-sm', 'data-j': 'report', onclick: function () { d.disputeReason = sel.value; advance(c, d, 'disputed'); toast(L('সমস্যা জানানো হয়েছে। পেমেন্ট আটকে আছে।', 'Problem reported. Payout is on hold.')); render(); } }, icon('flag', 16), L('সমস্যা জানান', 'Report a problem')))),
           h('dl', { class: 'stats' },
             h('div', null, h('dt', null, L('রিচ', 'Reach')), h('dd', null, num(m.reach))),
             h('div', null, h('dt', null, L('ক্লিক', 'Clicks')), h('dd', null, num(m.clicks))),
@@ -844,10 +946,11 @@
         return h('div', { class: 'panel' }, h('strong', null, L('সমস্যা জানানো হয়েছে', 'Problem reported')),
           h('p', null, L('কারণ: ' + (d.disputeReason || '') + '। আমাদের টিম প্রুফ আর পোস্ট দেখছে, পেমেন্ট আটকে আছে।', 'Reason: ' + (d.disputeReason || '') + '. Our team is checking the proof and the post. The payout is on hold.')),
           proofCard(c, d),
+          WORLD === 'journey' ? h('p', { class: 'tiny muted' }, L('আমাদের টিম কনসোল থেকে সিদ্ধান্ত নেয়।', 'Our team decides this in the team console.')) :
           h('div', { class: 'demo-short' }, h('span', { class: 'lbl' }, L('ডেমো শর্টকাট: আমাদের টিমের সিদ্ধান্ত', 'Demo shortcut: our team\'s decision')),
             h('div', { class: 'row' },
-              h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { advance(c, d, 'refunded'); toast(L('উল্লেখ ছিল না। পুরো টাকা ফেরত।', 'No mention found. Full refund.')); render(); } }, L('উল্লেখ ছিল না: পুরো টাকা ফেরত', 'No mention: full refund')),
-              h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { d.verified = true; d.stage = 'live'; save(); toast(L('উল্লেখ ঠিক ছিল। পেমেন্ট আবার চালু।', 'The mention was fine. Payout resumed.')); render(); } }, L('উল্লেখ ঠিক ছিল: পেমেন্ট চালু', 'Mention was fine: resume payout')))));
+              h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: function () { resolveDispute(c, d, 'refund'); toast(L('উল্লেখ ছিল না। পুরো টাকা ফেরত।', 'No mention found. Full refund.')); render(); } }, L('উল্লেখ ছিল না: পুরো টাকা ফেরত', 'No mention: full refund')),
+              h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: function () { resolveDispute(c, d, 'resume'); toast(L('উল্লেখ ঠিক ছিল। পেমেন্ট আবার চালু।', 'The mention was fine. Payout resumed.')); render(); } }, L('উল্লেখ ঠিক ছিল: পেমেন্ট চালু', 'Mention was fine: resume payout')))));
       case 'paid': {
         var fm = d.final, cpo = (d.fee + d.pf) / fm.orders;
         return h('div', { class: 'panel' }, h('strong', null, L('ডিল শেষ', 'Deal finished')),
@@ -859,16 +962,16 @@
           h('p', { class: 'small' }, L(money(d.fee) + ' ইনফ্লুয়েন্সারের বিকাশ/নগদে গেছে (' + ago(d.t.paidAt) + ')।', money(d.fee) + ' was paid to the influencer\'s wallet (' + ago(d.t.paidAt) + ').')));
       }
       default:
-        return h('div', { class: 'panel' }, h('strong', null, L('পুরো টাকা ফেরত', 'Full refund')),
+        return h('div', { class: 'panel', 'data-j': 'refund-done' }, h('strong', null, L('পুরো টাকা ফেরত', 'Full refund')),
           h('p', null, L(money(d.total) + ' আপনার কাছে ফেরত গেছে (' + ago(d.t.refundedAt) + ')। চাইলে অন্য ইনফ্লুয়েন্সার বেছে নিতে পারেন।', money(d.total) + ' went back to you (' + ago(d.t.refundedAt) + '). You can pick another influencer.')),
           h('div', { class: 'row' }, h('a', { class: 'btn btn-sm', href: '#/find' }, L('অন্য ইনফ্লুয়েন্সার খুঁজুন', 'Find another influencer'))));
     }
   }
 
   /* ---------- demo tools ---------- */
+  function moveClock(hours) { state.offset += hours * H; var changed = tick(); save(); return changed; }
   function fastForward(hours) {
-    state.offset += hours * H;
-    var changed = tick(); save(); render();
+    var changed = moveClock(hours); render();
     toast(L(hours + ' ঘণ্টা এগিয়ে গেছে।' + (changed ? ' কিছু ডিলের পেমেন্ট হয়ে গেছে।' : ''), 'Moved ' + hours + ' hours ahead.' + (changed ? ' Some deals have been paid out.' : '')));
   }
   function openTools() {
@@ -877,6 +980,13 @@
     dlg.replaceChildren(h('div', { class: 'dlg' },
       h('div', { class: 'dlg-h' }, h('h2', { id: 'tools-title' }, L('ডেমো টুলস', 'Demo tools')),
         h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-label': L('বন্ধ করুন', 'Close'), onclick: function () { dlg.close(); } }, icon('x', 18))),
+      h('div', { class: 'field' }, h('span', { class: 'lbl' }, L('কার অ্যাপ দেখবেন', 'Whose app to view')),
+        h('div', { class: 'seg' }, ['seller', 'creator', 'team'].map(function (rl) {
+          return h('button', { type: 'button', 'aria-pressed': roleOf(route()) === rl ? 'true' : 'false', onclick: function () { dlg.close(); go(ROLE_HOME[rl]); } },
+            rl === 'creator' ? L('ক্রিয়েটর (নুসরাত)', 'Creator (Nusrat)') : roleName(rl));
+        })),
+        h('span', { class: 'hint' }, L('পুরো গল্পটা ধাপে ধাপে দেখতে ', 'To see the whole story step by step, open the ') ,
+          h('a', { href: './' }, L('জার্নি ডেমো খুলুন', 'journey demo')), L('।', '.'))),
       h('div', { class: 'field' }, h('span', { class: 'lbl' }, L('কোন ব্র্যান্ড হিসেবে দেখবেন', 'View as brand')),
         h('div', { class: 'seg' }, D.brands.map(function (b) {
           return h('button', { type: 'button', 'aria-pressed': b.id === state.brandId ? 'true' : 'false', onclick: function () {
@@ -891,18 +1001,39 @@
       h('div', { class: 'field' }, h('span', { class: 'lbl' }, L('ডেমো ডেটা', 'Demo data')),
         h('button', { type: 'button', class: 'btn btn-danger', onclick: function () {
           if (!confirm(L('সব ডেটা প্রথম অবস্থায় ফিরে যাবে। রিসেট করবেন?', 'Everything goes back to the starting data. Reset?'))) return;
-          var lang = state.lang; state = seed(); state.lang = lang; save(); dlg.close(); go('#/'); render(); toast(L('ডেমো ডেটা রিসেট হয়েছে।', 'Demo data reset.'));
+          BB.reset(); dlg.close(); go('#/'); render(); toast(L('ডেমো ডেটা রিসেট হয়েছে।', 'Demo data reset.'));
         } }, icon('refresh', 18), L('সব রিসেট করুন', 'Reset everything')))));
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   }
 
-  /* ---------- boot ---------- */
-  state = load();
-  window.addEventListener('hashchange', render);
-  setInterval(function () {
-    var dlgOpen = $('#tools').open, a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
-    var r = route().name;
-    if (!dlgOpen && !typing && (r === 'home' || r === 'c')) render();
-  }, 30000);
-  render();
+  /* ---------- exports for creator.js, team.js, outreach.js, journey.js ---------- */
+  Object.assign(BB, {
+    D: D, H: H, WORLD: WORLD, EMBED: EMBED, CR: CR, HELD: HELD, NEW_BRIEF: NEW_BRIEF, ROLE_HOME: ROLE_HOME, hooks: hooks,
+    S: function () { return state; },
+    reset: function () { var lang = state.lang; state = seed(); state.lang = lang; syncFee(); hooks.reset.forEach(function (f) { f(); }); save(); },
+    h: h, icon: icon, $: $, rng: rng, randStr: randStr, mmss: mmss, price: price, makeProof: makeProof, holdOf: holdOf, hold: hold,
+    save: save, byId: byId, byBrand: byBrand, brand: brand, campaignById: campaignById, findDeal: findDeal, isMember: isMember,
+    now: now, L: L, txt: txt, lbl: lbl, infName: infName, brandName: brandName, money: money, num: num, compact: compact, pct: pct,
+    dateStr: dateStr, ago: ago, avatar: avatar, audText: audText, metrics: metrics, advance: advance, planText: planText, planWord: planWord,
+    stageText: stageText, stageTone: stageTone, resolveDispute: resolveDispute, fundCampaign: fundCampaign, moveClock: moveClock, fastForward: fastForward,
+    pageHead: pageHead, emptyCard: emptyCard, kv: kv, statCard: statCard, field: field, toast: toast, go: go, render: render, route: route, roleOf: roleOf,
+    proofCard: proofCard, codeRows: codeRows, copyBtn: copyBtn, tabBar: tabBar, sum: sum, toggleLang: toggleLang,
+    setLang: function (l) { if (l !== state.lang) { state.lang = l; save(); render(); } }
+  });
+
+  /* ---------- boot (called by app.html once every view file has loaded) ---------- */
+  BB.boot = function () {
+    if (EMBED) document.documentElement.classList.add('embed');
+    try { localStorage.removeItem('bb-demo-v2'); } catch (e) { /* nothing saved */ }
+    state = load();
+    syncFee();
+    save();
+    window.addEventListener('hashchange', render);
+    setInterval(function () {
+      var dlgOpen = $('#tools').open, a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+      var r = route().name;
+      if (!dlgOpen && !typing && (r === 'home' || r === 'c' || r === 'cr' || r === 'team')) render();
+    }, 30000);
+    render();
+  };
 })();

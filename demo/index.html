@@ -1,23 +1,57 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Brandবন্ধু ডেমো</title>
-<meta name="description" content="Brandবন্ধু ডেমো: কাল্পনিক ডেটা দিয়ে দেখুন ইনফ্লুয়েন্সার বুক করা আর নিরাপদ পেমেন্ট কীভাবে কাজ করে।">
+<title>Brandবন্ধু: the full journey (demo)</title>
+<meta name="description" content="Play the whole Brandবন্ধু journey: how we bring in creators and sellers, how a deal is booked and paid, and what our team does in the middle. Fictional demo data.">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#C2185B">
+<meta name="theme-color" content="#1F2A5C">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&amp;family=Hind+Siliguri:wght@400;500;600;700&amp;display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="player.css">
 </head>
 <body>
-<div id="app"></div>
-<dialog id="tools" aria-labelledby="tools-title"></dialog>
-<div id="toast" role="status" aria-live="polite"></div>
-<noscript><p style="padding:24px;font-family:sans-serif">ডেমো চালাতে JavaScript লাগবে। This demo needs JavaScript.</p></noscript>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<header class="ptop">
+  <a class="plogo" href="./" aria-label="Brandবন্ধু">
+    <svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><circle cx="15" cy="20" r="12" fill="#C2185B"/><circle cx="25" cy="20" r="12" fill="#F5B700" fill-opacity="0.92"/></svg>
+    <span class="plogo-t">Brand<span>বন্ধু</span></span>
+    <span class="ppill" id="p-title">Journey demo</span>
+  </a>
+  <div class="proles" role="group" id="p-roles"></div>
+  <div class="pacts">
+    <button type="button" class="pbtn ghost" id="p-lang">বাংলা</button>
+    <button type="button" class="pbtn ghost" id="p-restart"></button>
+  </div>
+</header>
+
+<div class="pmain">
+  <aside class="pflow" id="p-flow">
+    <div class="pmoney" id="p-money" aria-live="polite"></div>
+    <div class="planes" id="p-lanes" aria-hidden="true"></div>
+    <div class="pdiag" id="p-diag">
+      <svg id="p-lines" aria-hidden="true"></svg>
+      <ol id="p-steps"></ol>
+    </div>
+    <p class="pnote" id="p-note"></p>
+  </aside>
+  <section class="pstage" id="p-stage">
+    <div class="device phone" id="p-device">
+      <div class="dev-chrome" aria-hidden="true"><i></i><i></i><i></i><span id="p-chrome"></span></div>
+      <iframe id="p-frame" title="Brandবন্ধু app" src="app.html?world=journey&amp;embed=1"></iframe>
+    </div>
+  </section>
+</div>
+
+<footer class="pcap" id="p-cap">
+  <div class="cap-body">
+    <div class="cap-meta"><button type="button" class="pbtn sheet-btn" id="p-sheet" aria-controls="p-flow" aria-expanded="false"></button><span id="p-count"></span><span class="who" id="p-who"></span></div>
+    <div aria-live="polite"><p class="cap-text" id="p-text"></p><p class="cap-why" id="p-why"></p></div>
+  </div>
+  <div class="cap-ctl" id="p-ctl"></div>
+</footer>
+<noscript><p style="padding:24px">This demo needs JavaScript.</p></noscript>
+<script src="player.js"></script>
 </body>
 </html>
