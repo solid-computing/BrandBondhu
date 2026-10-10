@@ -64,16 +64,31 @@
       done: function (s) { return s.seller.stage !== 'stranger'; },
       act: function () { BB.sellerRequest(); } },
     { lane: 'team', phase: 2, gap: 16,
-      t: function () { return L('5 জন বেছে পাঠায়', 'Picks 5, sends them'); },
-      cap: function () { return L('রিকোয়েস্ট টিমের কাছে আসে। তার বাজেটে মানানসই 5 জন ভেরিফায়েড ফ্যাশন ইনফ্লুয়েন্সার বেছে চ্যাটে পাঠানো হয়।', 'The request reaches our team. We pick 5 verified fashion influencers that fit her budget and send them in chat.'); },
-      why: function () { return L('মানুষ বেছে দেয়, বট না। ক্যাটাগরি, শহর আর বাজেট মিলিয়ে।', 'Picked by people, not a bot: matched on category, city and budget.'); },
+      t: function () { return L('5 জন বেছে পাঠায়, নাম ছাড়া', 'Picks 5, sends without names'); },
+      cap: function () { return L('রিকোয়েস্ট টিমের কাছে আসে। তার বাজেটে মানানসই 5 জন ভেরিফায়েড ফ্যাশন ইনফ্লুয়েন্সার বেছে চ্যাটে পাঠানো হয়, নাম ছাড়া।', 'The request reaches our team. We pick 5 verified fashion influencers that fit her budget and send them in chat, without names.'); },
+      why: function () { return L('ব্র্যান্ড চেক না হওয়া পর্যন্ত নাম লুকানো থাকে, তাই কেউ আমাদের এড়িয়ে যেতে বা নাম অপব্যবহার করতে পারে না।', 'Names stay hidden until the brand is checked, so nobody can go around us or misuse them.'); },
       route: function () { return '#/team'; }, target: function () { return '[data-j="send-shortlist"]'; },
-      done: function (s) { return s.seller.stage === 'shortlisted' || s.seller.stage === 'customer'; },
+      done: function () { return BB.sellerAt('shortlisted'); },
       act: function () { var q = BB.myRequest(); if (q) BB.teamSendShortlist(q.id); } },
     { lane: 'seller', phase: 2, gap: 2,
-      t: function () { return L('চ্যাটে শর্টলিস্ট পান', 'Gets the shortlist'); },
-      cap: function () { return L('চ্যাটে শর্টলিস্ট আসে, সবার ফি আর অডিয়েন্স সহ। শুরুতে সাদিয়া নুসরাতকে বাছেন।', 'The shortlist arrives in chat with each fee and audience. Sadia starts with Nusrat.'); },
-      route: function () { return '#/s/chat'; }, target: function () { return '[data-j="book-picked"]'; },
+      t: function () { return L('ফ্রি সাইন আপ, পেজ কানেক্ট', 'Signs up, connects page'); },
+      cap: function () { return L('শর্টলিস্টে ফি, ফলোয়ার, এনগেজমেন্ট সব আছে, শুধু নাম নেই। নাম দেখতে সাদিয়া ফ্রি সাইন আপ করে নিজের ফেসবুক পেজ কানেক্ট করেন।', 'The shortlist shows fees, followers and engagement, but no names. To see who they are, Sadia signs up free and connects her Facebook page.'); },
+      route: function () { return S().seller.opened ? '#/s/join' : '#/s/chat'; },
+      target: function () { var se = S().seller; return !se.opened ? '[data-j="see-names"]' : se.page ? '[data-j="submit-signup"]' : '[data-j="connect-page"]'; },
+      done: function () { return BB.sellerAt('review'); },
+      // Two presses: open the sign-up from the chat, then sign up.
+      act: function () { if (!S().seller.opened) BB.sellerOpen(); else { BB.sellerConnectPage(); BB.sellerSignup(); } } },
+    { lane: 'team', phase: 2, gap: 1,
+      t: function () { return L('ব্র্যান্ড ভেরিফাই', 'Verifies the brand'); },
+      cap: function () { return L('টিম ব্র্যান্ড চেক করে: পেজ আসল কি না, তিনি পেজের অ্যাডমিন কি না, আর পণ্যটা চলবে কি না। বেটিং অ্যাপ বা নকল পণ্য বাদ।', 'Our team checks the brand: is the page real, is she its admin, is the product allowed. Betting apps and fake products are turned away.'); },
+      why: function () { return L('ইনফ্লুয়েন্সাররা শুধু চেক করা ব্র্যান্ডের অফার পান।', 'Influencers only ever get offers from checked brands.'); },
+      route: function () { return '#/team/verify'; }, target: function () { return '[data-j="approve-brand"]'; },
+      done: function () { return BB.sellerAt('verified'); },
+      act: function () { BB.teamVerifyBrand(S().brandId, true); } },
+    { lane: 'seller', phase: 2, gap: 0.5,
+      t: function () { return L('নাম দেখে নুসরাতকে বাছেন', 'Sees names, picks Nusrat'); },
+      cap: function () { return L('ভেরিফাই হয়ে গেছে। অ্যাপে নামগুলো খুলে যায়, আর শুরুতে সাদিয়া নুসরাতকে বাছেন।', 'Verified. The names open in the app, and Sadia starts with Nusrat.'); },
+      route: function () { return '#/s/join'; }, target: function () { return '[data-j="book-picked"]'; },
       done: function (s) { return s.seller.stage === 'customer'; },
       act: function () { BB.sellerPick([BB.CR]); } },
     { lane: 'seller', phase: 3, gap: 1,
@@ -91,7 +106,7 @@
       act: function () { var s = S(); if (s.shortlist.indexOf(BB.CR) < 0) s.shortlist.unshift(BB.CR); s.shortlist = s.shortlist.slice(0, 5); BB.fundCampaign(); } },
     { lane: 'creator', phase: 3, gap: 5,
       t: function () { return L('অফার নেন', 'Accepts the offer'); },
-      cap: function () { return L('নুসরাত অফার দেখেন। টাকা আগেই জমা, তাই পেমেন্ট নিয়ে চিন্তা নেই। তিনি কাজটা নেন।', 'Nusrat sees the offer. The money is already in, so she knows she will be paid. She takes it.'); },
+      cap: function () { return L('নুসরাত ভেরিফায়েড ব্র্যান্ডের অফার দেখেন। টাকা আগেই জমা, তাই পেমেন্ট নিয়ে চিন্তা নেই। তিনি কাজটা নেন।', 'Nusrat sees an offer from a verified brand. The money is already in, so she knows she will be paid. She takes it.'); },
       why: function () { return L('ইনফ্লুয়েন্সারকে টাকার জন্য পিছে ঘুরতে হয় না।', 'Influencers never chase a brand for payment.'); },
       route: function () { return dealRoute('offer'); }, target: function () { return '[data-j="accept"]'; },
       done: function () { return at(deal()) >= 1; },
@@ -108,7 +123,7 @@
       route: camp, target: function () { return '[data-j="approve-plan"]'; },
       done: function () { return at(deal()) >= 3; },
       act: function () { var x = deal(); BB.advance(x.c, x.d, 'approved'); } },
-    { lane: 'creator', phase: 4, gap: 26,
+    { lane: 'creator', phase: 4, gap: 26, posted: true,
       t: function () { return L('পোস্ট করে প্রুফ দেন', 'Posts, sends proof'); },
       cap: function () { return L('নুসরাত নিজের ভিডিওতেই ঢাকা থ্রেডসের কথা বলেন, তারপর প্রুফ দেন: লিংক, কখন বলেছেন, আর কোড।', 'Nusrat mentions Dhaka Threads in her own video, then sends proof: the link, when she says it, and the code.'); },
       why: function () { return L('প্রুফ মানে লিংক আর সময়। যে কেউ খুলে মিলিয়ে দেখতে পারে।', 'Proof is a link and a timestamp that anyone can open and check.'); },
@@ -143,7 +158,10 @@
       act: function () { S().j.seen = Math.max(S().j.seen, 17); BB.save(); } }
   ];
 
-  // Starts from the state right after step 13 (posted, proof in, not yet confirmed).
+  // POSTED = number of main steps up to and including "posts, sends proof"; the what-if branch starts there.
+  var POSTED = MAIN.map(function (st) { return !!st.posted; }).indexOf(true) + 1;
+
+  // Starts from the state right after the posted step (proof in, not yet confirmed).
   var WHATIF = [
     { lane: 'seller', phase: 6, gap: 5,
       t: function () { return L('সমস্যা জানান', 'Reports a problem'); },
@@ -182,15 +200,17 @@
   function norm(hash) { return (hash || '#/').replace(/\/+$/, '') || '#'; }
   function onRoute(want) { return norm(location.hash) === norm(want); }
   function doStep(st) { if (st.gap) BB.moveClock(st.gap); st.act(); }
+  // Some steps take two actions (open the sign-up, then sign up), so repeat until the step is done.
+  function finish(st) { for (var n = 0; n < 3 && !st.done(S()); n++) doStep(st); }
 
   // Rebuild the journey world as it was just before step n (1-based) of the given mode.
   function goto(md, n) {
     busy = true;
     BB.reset();
-    var upto = md === 'whatif' ? 13 : Math.max(0, Math.min(n, MAIN.length + 1) - 1);
-    for (var k = 0; k < upto; k++) doStep(MAIN[k]);
+    var upto = md === 'whatif' ? POSTED : Math.max(0, Math.min(n, MAIN.length + 1) - 1);
+    for (var k = 0; k < upto; k++) finish(MAIN[k]);
     S().j.mode = md;
-    if (md === 'whatif') for (k = 0; k < Math.min(n, WHATIF.length + 1) - 1; k++) doStep(WHATIF[k]);
+    if (md === 'whatif') for (k = 0; k < Math.min(n, WHATIF.length + 1) - 1; k++) finish(WHATIF[k]);
     BB.save();
     busy = false;
     lastIdx = currentIdx();
@@ -223,7 +243,7 @@
   }
   function back() {
     var k = currentIdx();
-    if (mode() === 'whatif') return k === 0 ? goto('main', 14) : goto('whatif', k);
+    if (mode() === 'whatif') return k === 0 ? goto('main', POSTED + 1) : goto('whatif', k);
     if (k > 0) goto('main', k);
   }
 
@@ -250,7 +270,7 @@
     var s = S(), md = mode(), list = steps(), k = currentIdx(), cur = list[k];
     function node(st, i, which) {
       var o = { n: i + 1, lane: st.lane, phase: st.phase, title: st.t(), mode: which, done: st.done(s), current: which === md && i === k };
-      if (which === 'main' && md === 'whatif') { o.done = i < 13; o.skipped = i >= 13; }
+      if (which === 'main' && md === 'whatif') { o.done = i < POSTED; o.skipped = i >= POSTED; }
       if (which === 'whatif' && md !== 'whatif') o.done = false;
       return o;
     }
@@ -264,7 +284,7 @@
       lane: cur ? cur.lane : null, laneName: cur ? BB.txt(LANES[cur.lane]) : '',
       caption: cur ? cur.cap() : end.cap, why: cur ? (cur.why ? cur.why() : '') : end.why,
       onStep: cur ? onRoute(cur.route()) : true,
-      canWhatIf: md === 'main' && MAIN[12].done(s),
+      canWhatIf: md === 'main' && MAIN[POSTED - 1].done(s), resume: POSTED + 1,
       offTrack: offTrack(), money: money(), role: BB.roleOf(BB.route())
     };
   }

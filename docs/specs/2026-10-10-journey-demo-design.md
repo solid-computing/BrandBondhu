@@ -28,37 +28,40 @@ Supply comes first, so a seller always finds checked creators waiting.
 | # | Phase | Lane | Step |
 |---|---|---|---|
 | 1 | Bring in creators | Team | Find Nusrat, send an invite |
-| 2 | | Creator | Gets the invite, joins (free) |
-| 3 | | Creator | Connects her account, sets fee and wallet, sends for review |
+| 2 | | Influencer | Gets the invite, joins (free) |
+| 3 | | Influencer | Connects her account, sets fee and wallet, sends for review |
 | 4 | | Team | Checks followers, engagement, audience; marks Verified |
 | 5 | Win a seller | Seller | Sadia sees our post in a sellers' group, asks for a free shortlist |
-| 6 | | Team | Picks 5 verified fashion influencers in budget, sends them |
-| 7 | | Seller | Shortlist arrives in chat; she picks Nusrat |
-| 8 | Book and pay | Seller | Writes key points (not a script), sees the price |
-| 9 | | Seller | Pays ৳9,380 (৳8,000 + 15% ৳1,200 + VAT ৳180); a licensed payment partner holds it |
-| 10 | | Creator | Sees the offer with the money already in, accepts |
-| 11 | Post and check | Creator | Shares a short plan with code NUSRAT10 |
-| 12 | | Seller | Approves the plan (one change allowed) |
-| 13 | | Creator | Mentions it in her own reel, submits proof (link, time, code) |
-| 14 | | Seller | Checks the mention, confirms |
-| 15 | Get paid | Team | 72 hours pass; ৳8,000 to Nusrat, ৳1,200 to us, ৳180 VAT |
-| 16 | | Creator | Money in her wallet, rating up |
-| 17 | | Seller | Reach, clicks, orders by code, cost per order; run again |
+| 6 | | Team | Picks 5 verified fashion influencers in budget, sends them in chat **without names** |
+| 7 | | Seller | Signs up free: phone code + connects her Facebook page (proves she is an admin) |
+| 8 | | Team | **Verifies the brand**: real page, she is its admin, product allowed (no betting, fakes, adult, schemes) |
+| 9 | | Seller | Names unlock; she picks Nusrat |
+| 10 | Book and pay | Seller | Writes key points (not a script), sees the price |
+| 11 | | Seller | Pays ৳9,380 (৳8,000 + 15% ৳1,200 + VAT ৳180); a licensed payment partner holds it |
+| 12 | | Influencer | Sees the offer with the money already in, accepts |
+| 13 | Post and check | Influencer | Shares a short plan with code NUSRAT10 |
+| 14 | | Seller | Approves the plan (one change allowed) |
+| 15 | | Influencer | Mentions it in her own reel, submits proof (link, time, code) |
+| 16 | | Seller | Checks the mention, confirms |
+| 17 | Get paid | Team | 72 hours pass; ৳8,000 to Nusrat, ৳1,200 to us, ৳180 VAT |
+| 18 | | Influencer | Money in her wallet, rating up |
+| 19 | | Seller | Reach, clicks, orders by code, cost per order; run again |
 
-"What if it goes wrong?" branch, from the state after step 13:
+"What if it goes wrong?" branch, from the state after step 15:
 W1 seller reports "no mention" (payout frozen), W2 team compares proof and post and refunds
 (or resumes if the mention is there), W3 seller gets ৳9,380 back.
 
 ## Screens
 
-- Seller (phone): group post with the free-shortlist form, chat with the shortlist, then the
-  existing app (home, find, profile, brief and price, pay, campaign with results). Results get a
+- Seller (phone): group post with the free-shortlist form, chat with the shortlist (no names),
+  sign-up with phone code and Facebook page, "being checked", names unlocked, then the existing app (home, find, profile, brief and price, pay, campaign with results). Results get a
   "Run again" button.
 - Creator (phone): invite chat, join and connect account (fee, formats, wallet), under review,
   home with offers and deals, offer (accept or decline), deal (plan, proof, countdown, paid),
   earnings.
-- Team (laptop): requests (auto-matched 5, send), creator pipeline
-  (Found, Messaged, Replied, Joined, Verified), verification queue with checks and red flags,
+- Team (laptop): requests (auto-matched 5, sent without names), influencer pipeline
+  (Found, Messaged, Replied, Joined, Verified), verification of brands and influencers with checks
+  and red flags (e.g. a betting app is turned away),
   money (paid in, held, paid out, our revenue, VAT, ledger), problems (complaint next to proof).
 - Chat and feed screens are generic: no Facebook, WhatsApp, bKash or Nagad logos or colours.
 
@@ -102,3 +105,16 @@ works.
 ## Not in scope
 
 Commission-on-sales deals, several deals in the guided run, real sign-in, real payment branding.
+
+## Added after review (same day)
+
+- **Names stay hidden until the brand is verified.** The chat shortlist shows fee, platform, city,
+  followers and engagement only. A free sign-up (phone code + connected Facebook page) and our check
+  unlock the names. Phone numbers are never shared; talks and payment stay in Brandবন্ধু. This stops
+  sellers going around us and protects influencers from fake brands.
+- **Brand verification mirrors influencer verification:** phone, page admin, real page (age,
+  followers, reviews), allowed product; owner NID or trade licence at the first payment (payment
+  partner KYC). Influencers see a "Verified brand" badge on offers.
+- **Words:** "influencer" wherever investors, sellers and our team look; "content creator" only in
+  text written to the influencers themselves (as decided in #2).
+- The journey is now 19 steps; the landing page says names are shown only to verified brands.

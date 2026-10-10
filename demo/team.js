@@ -39,6 +39,24 @@
     var p = S().prospects.filter(function (x) { return x.id === id; })[0];
     if (p && p.stage === 'joined') { p.stage = ok ? 'verified' : 'replied'; p.at = BB.now(); if (!ok) p.asked = true; BB.save(); }
   };
+  // A brand's check: the seller in the story (her page and product), or another applicant in the queue.
+  BB.teamVerifyBrand = function (id, ok) {
+    var s = S();
+    if (id === s.brandId) {
+      if (s.seller.stage !== 'review') return;
+      if (ok) { s.seller.stage = 'verified'; s.seller.verifiedAt = BB.now(); } else { s.seller.stage = 'shortlisted'; s.seller.page = false; s.seller.asked = true; }
+      BB.save(); return;
+    }
+    var a = (s.brandQueue || []).filter(function (x) { return x.id === id; })[0];
+    if (a && a.status === 'review') { a.status = ok ? 'verified' : 'rejected'; a.at = BB.now(); BB.save(); }
+  };
+  function brandQueue() {
+    var s = S(), out = [];
+    if (s.seller.stage === 'review') out.push({ me: true, b: BB.brand() });
+    (s.brandQueue || []).filter(function (a) { return a.status === 'review'; }).forEach(function (a) { out.push({ me: false, b: a }); });
+    return out;
+  }
+
   // Best 5 verified influencers for a request: same category, fee within budget, same city first.
   BB.matchesFor = function (q) {
     var b = BB.byBrand(q.brandId), max = D.budgets[q.budget].max;
@@ -79,7 +97,8 @@
           })),
           h('button', { type: 'button', class: 'btn', 'data-j': 'send-shortlist', style: 'align-self:flex-start', onclick: function () {
             BB.teamSendShortlist(q.id); BB.toast(L('চ্যাটে শর্টলিস্ট পাঠানো হয়েছে।', 'Shortlist sent in chat.')); BB.render();
-          } }, L('চ্যাটে পাঠান', 'Send in chat'), icon('arrow', 18)));
+          } }, L('নাম ছাড়া চ্যাটে পাঠান', 'Send in chat, without names'), icon('arrow', 18)),
+          h('p', { class: 'tiny muted' }, L('ব্র্যান্ড সাইন আপ করে ভেরিফাই হলে তবেই নাম দেখতে পায়।', 'The brand sees the names only after it signs up and we verify it.')));
       }) : h('div', { class: 'card empty' }, h('p', { class: 'muted' }, L('নতুন রিকোয়েস্ট নেই।', 'No new requests.'))),
       rest.length ? h('h2', null, L('আগের রিকোয়েস্ট', 'Earlier requests')) : null,
       rest.length ? h('div', { class: 'grid two' }, rest.map(function (q) {
@@ -144,12 +163,47 @@
       [true, L('অডিয়েন্সের 84% বাংলাদেশে', '84% of the audience is in Bangladesh')]
     ];
   }
+  function brandChecks(x) {
+    var b = x.b;
+    if (x.me) return [
+      [true, L('ফোন নম্বর কোড দিয়ে ভেরিফাই হয়েছে', 'Phone verified with a code')],
+      [true, L('ফেসবুক পেজ কানেক্টেড, তিনি পেজের অ্যাডমিন', 'Facebook page connected, she is an admin')],
+      [true, L('পেজ 2021 থেকে চলছে, ' + BB.compact(b.fans) + ' ফলোয়ার, রিভিউ 4.6 ★', 'Page running since 2021, ' + BB.compact(b.fans) + ' followers, reviews 4.6 ★')],
+      [true, L('পণ্য: ' + BB.lbl(D.categories, b.cat) + ', চলবে', 'Product: ' + BB.lbl(D.categories, b.cat) + ', allowed')],
+      [null, L('মালিকের NID বা ট্রেড লাইসেন্স: প্রথম পেমেন্টের সময় নেওয়া হয়', 'Owner NID or trade licence: taken at the first payment')]
+    ];
+    return [
+      [true, L('ফোন নম্বর কোড দিয়ে ভেরিফাই হয়েছে', 'Phone verified with a code')],
+      [false, L('পেজ মাত্র ' + BB.txt(b.pageAge) + ' পুরনো, ফলোয়ার হঠাৎ বেড়েছে', 'Page only ' + BB.txt(b.pageAge) + ' old, followers jumped suddenly')],
+      [false, BB.txt(b.flag)]
+    ];
+  }
+  function brandCard(x) {
+    var b = x.b, list = brandChecks(x), bad = list.some(function (c) { return c[0] === false; });
+    var name = x.me ? BB.brandName(b) : L(b.nameBn, b.nameEn), what = x.me ? BB.txt(b.product) : BB.txt(b.what);
+    return h('article', { class: 'card' + (x.me ? ' attn-card' : '') },
+      h('div', { class: 'row', style: 'flex-wrap:nowrap' }, h('div', { class: 'avatar', style: 'background:' + (x.me ? '#FFE7A3' : '#FDECEA'), 'aria-hidden': 'true' }, icon('facebook', 22)),
+        h('div', { style: 'min-width:0' }, h('h3', null, name), h('div', { class: 'tiny muted' }, b.fb + ' · ' + what))),
+      h('ul', { class: 'ledger' }, list.map(function (c) {
+        return h('li', { class: c[0] === false ? 'warn' : '' }, icon(c[0] === false ? 'flag' : c[0] ? 'check' : 'clock', 18, c[0] === false ? 'warn-i' : c[0] ? 'verified' : null), h('span', null, c[1]));
+      })),
+      h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'btn btn-sm' + (bad ? ' btn-ghost' : ''), 'data-j': x.me ? 'approve-brand' : null, onclick: function () {
+          BB.teamVerifyBrand(b.id, true); BB.toast(L('ব্র্যান্ড ভেরিফাই হয়েছে। এখন নাম দেখতে পাবে।', 'Brand verified. It can now see the names.')); BB.render();
+        } }, icon('check', 16), L('ভেরিফাই করুন', 'Verify')),
+        h('button', { type: 'button', class: 'btn btn-sm ' + (bad ? 'btn-danger' : 'btn-ghost'), onclick: function () {
+          BB.teamVerifyBrand(b.id, false); BB.toast(x.me ? L('আরও তথ্য চাওয়া হয়েছে।', 'Asked for more information.') : L('ব্র্যান্ড বাতিল হয়েছে।', 'Brand turned away.')); BB.render();
+        } }, icon('x', 16), x.me ? L('এখন না, তথ্য চাই', 'Not yet, ask for info') : L('বাতিল করুন', 'Turn away'))));
+  }
   function viewVerify() {
-    var s = S(), i = BB.byId(BB.CR), queue = [];
+    var s = S(), i = BB.byId(BB.CR), queue = [], brands = brandQueue();
     if (s.cr.status === 'review') queue.push({ p: i, nusrat: true });
     s.prospects.filter(function (p) { return p.stage === 'joined'; }).forEach(function (p) { queue.push({ p: p, nusrat: false }); });
     return [h('div', { style: 'display:contents' },
-      BB.pageHead(L('ভেরিফিকেশন', 'Verification'), L('ডিরেক্টরিতে ওঠার আগে প্রত্যেক ইনফ্লুয়েন্সারকে একবার চেক করি। ভুয়া ফলোয়ার থাকলে বাদ।', 'We check every influencer once before they reach the directory. Fake followers are turned away.')),
+      BB.pageHead(L('ভেরিফিকেশন', 'Verification'), L('দুই পক্ষকেই চেক করি: ব্র্যান্ড নাম দেখার আগে, ইনফ্লুয়েন্সার ডিরেক্টরিতে ওঠার আগে।', 'We check both sides: brands before they see any names, influencers before they reach the directory.')),
+      h('h2', null, L('ব্র্যান্ড', 'Brands')),
+      brands.length ? h('div', { class: 'grid two' }, brands.map(brandCard)) : h('div', { class: 'card empty' }, h('p', { class: 'muted' }, L('কোনো ব্র্যান্ড চেকের অপেক্ষায় নেই।', 'No brands waiting.'))),
+      h('h2', null, L('ইনফ্লুয়েন্সার', 'Influencers')),
       queue.length ? h('div', { class: 'grid two' }, queue.map(function (x) {
         var p = x.p, list = checks(p, x.nusrat), bad = list.some(function (c) { return !c[0]; });
         return h('article', { class: 'card' + (x.nusrat ? ' attn-card' : '') },
@@ -259,7 +313,7 @@
   BB.tabs.team = function (r) {
     var s = S(), sub = r.parts[1] || 'requests';
     var nReq = s.requests.filter(function (q) { return q.status === 'new'; }).length;
-    var nVer = (s.cr.status === 'review' ? 1 : 0) + s.prospects.filter(function (p) { return p.stage === 'joined'; }).length;
+    var nVer = (s.cr.status === 'review' ? 1 : 0) + s.prospects.filter(function (p) { return p.stage === 'joined'; }).length + brandQueue().length;
     var nProb = allDeals().filter(function (x) { return x.d.stage === 'disputed'; }).length;
     return BB.tabBar([
       ['#/team', 'requests', L('রিকোয়েস্ট', 'Requests'), 'list', nReq || null],

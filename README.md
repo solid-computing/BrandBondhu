@@ -45,9 +45,11 @@ Dhaka Threads x Nusrat (৳8,000 + 15% fee + VAT = ৳9,380), across three sides
 
 - **Influencer** (phone): invite message, join, connect account, fee and wallet, under review, offer, plan,
   proof, payout, earnings.
-- **Seller** (phone): our post in a sellers' group, free-shortlist form, shortlist in chat, then the seller app
+- **Seller** (phone): our post in a sellers' group, free-shortlist form, shortlist in chat (no names), free sign-up
+  with the Facebook page connected, our brand check, names unlocked, then the seller app
   (brief and price, pay, approve the plan, check the mention, results, run again).
-- **Brandবন্ধু team** (laptop): shortlist requests, influencer pipeline, verification, money, reported problems.
+- **Brandবন্ধু team** (laptop): shortlist requests, influencer pipeline, verification of brands and influencers,
+  money, reported problems.
 
 Left: the flow diagram (lanes Seller, team, Influencer; click any step to jump there) and a money meter.
 Bottom: one-line captions with Back, Play and Next. Next shows the right screen and highlights the button;
@@ -62,7 +64,7 @@ demo/index.html, player.js, player.css   the journey player (embeds app.html?wor
 demo/app.html, app.js                    app shell, core helpers and seller views
 demo/outreach.js                         group post and shortlist chat (how sellers find us)
 demo/creator.js, team.js                 influencer app and team console
-demo/journey.js                          the 17 steps + what-if branch: screen, button, action, "done" test
+demo/journey.js                          the 19 steps + what-if branch: screen, button, action, "done" test
 demo/data.js                             fictional influencers, brands, prospects
 ```
 
