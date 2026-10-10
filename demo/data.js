@@ -95,8 +95,27 @@
     }
   ];
 
+  // Creators our team is talking to but who are not in the directory yet (team pipeline).
+  // stage: found, messaged, replied, joined (waiting for review), verified. ago = hours since last step.
+  // flag marks something our team has to look at before approving.
+  var prospects = [
+    { id: 'ritu',    nameEn: 'Ritu Moni',     nameBn: 'ঋতু মনি',      handle: '@ritu.ranna.ghor',   platform: 'facebook',  category: 'food',      followers: 22000, eng: 2.1, stage: 'found',    ago: 5 },
+    { id: 'tanvir',  nameEn: 'Tanvir Hasan',  nameBn: 'তানভীর হাসান',  handle: '@tanvir.unboxes',    platform: 'youtube',   category: 'tech',      followers: 41000, eng: 3.4, stage: 'found',    ago: 9 },
+    { id: 'nadia',   nameEn: 'Nadia Islam',   nameBn: 'নাদিয়া ইসলাম',  handle: '@nadia.drapes',      platform: 'instagram', category: 'fashion',   followers: 27000, eng: 4.4, stage: 'messaged', ago: 20 },
+    { id: 'rubel',   nameEn: 'Rubel Mia',     nameBn: 'রুবেল মিয়া',    handle: '@rubel.street.eats', platform: 'tiktok',    category: 'food',      followers: 63000, eng: 7.0, stage: 'replied',  ago: 14 },
+    { id: 'sumi',    nameEn: 'Sumi Akter',    nameBn: 'সুমি আক্তার',   handle: '@sumi.skin.diary',   platform: 'instagram', category: 'beauty',    followers: 19000, eng: 0.6, stage: 'joined',   ago: 26,
+      flag: { bn: '2 দিনে হঠাৎ 6,000 ফলোয়ার বেড়েছে, এনগেজমেন্ট খুব কম', en: 'Gained 6,000 followers in 2 days, and engagement is very low' } }
+  ];
+
+  // Budget choices on the free-shortlist form (same as the landing page).
+  var budgets = {
+    b20:  { bn: '৳20,000-এর কম',          en: 'Under ৳20,000',          max: 20000 },
+    b50:  { bn: '৳20,000 – ৳50,000',    en: '৳20,000 to ৳50,000',     max: 50000 },
+    b100: { bn: '৳50,000 – ৳100,000',  en: '৳50,000 to ৳100,000',   max: 100000 }
+  };
+
   window.BB_DATA = {
     categories: categories, cities: cities, platforms: platforms, formats: formats,
-    influencers: influencers, brands: brands
+    influencers: influencers, brands: brands, prospects: prospects, budgets: budgets
   };
 })();
