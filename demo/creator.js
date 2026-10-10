@@ -73,7 +73,7 @@
       : [{ out: false, at: c.invitedAt, body: BB.inviteText().map(function (t) { return h('p', null, t); }).concat([
           h('button', { type: 'button', class: 'btn btn-sm', 'data-j': 'join', onclick: function () { BB.crJoin(); BB.go('#/cr/join'); } }, L('জয়েন করুন, ফ্রি', 'Join, it\'s free'), icon('arrow', 16))]) }];
     return [h('div', { class: 'chat-wrap' }, BB.chat(msgs)), L('মেসেজ', 'Messages'),
-      BB.outsideBar(L('Brandবন্ধু টিম', 'Brandবন্ধু team'), L('মেসেজ রিকোয়েস্ট · নুসরাতের ফোনে (ডেমো)', 'Message request · on Nusrat\'s phone (demo)'))];
+      BB.outsideBar(L('Brandবন্ধু টিম', 'Brandবন্ধু team'), L('Instagram মেসেজ (আমাদের অ্যাপ না) · নুসরাতের ফোনে', 'Instagram message (not our app) · on Nusrat\'s phone'))];
   }
 
   /* ---------- C2/C3: join, connect the account, fee and wallet ---------- */

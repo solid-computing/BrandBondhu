@@ -43,31 +43,33 @@ everything is fictional and stays in the visitor's browser (`localStorage`).
 **`/demo/` is the journey player**, made for investors and partners. It plays one deal end to end,
 Dhaka Threads x Nusrat (৳8,000 + 15% fee + VAT = ৳9,380), across three sides:
 
-- **Creator** (phone): invite message, join, connect account, fee and wallet, under review, offer, plan,
+- **Influencer** (phone): invite message, join, connect account, fee and wallet, under review, offer, plan,
   proof, payout, earnings.
 - **Seller** (phone): our post in a sellers' group, free-shortlist form, shortlist in chat, then the seller app
   (brief and price, pay, approve the plan, check the mention, results, run again).
-- **Brandবন্ধু team** (laptop): shortlist requests, creator pipeline, verification, money, reported problems.
+- **Brandবন্ধু team** (laptop): shortlist requests, influencer pipeline, verification, money, reported problems.
 
-Left: the flow diagram (lanes Seller, team, Creator; click any step to jump there) and a money meter.
+Left: the flow diagram (lanes Seller, team, Influencer; click any step to jump there) and a money meter.
 Bottom: one-line captions with Back, Play and Next. Next shows the right screen and highlights the button;
 tapping it yourself works too. "What if it goes wrong?" plays the problem, check and refund path.
 Links to a step: `/demo/#/step/12`, `/demo/#/whatif/2`. Bangla if the browser is Bangla, else English.
 
 **`/demo/app.html` is the standalone seller demo** (as before: three demo brands, fast-forward, reset), and its
-Demo tools can now also show the creator and team views.
+Demo tools can now also show the influencer and team views.
 
 ```
 demo/index.html, player.js, player.css   the journey player (embeds app.html?world=journey&embed=1)
 demo/app.html, app.js                    app shell, core helpers and seller views
 demo/outreach.js                         group post and shortlist chat (how sellers find us)
-demo/creator.js, team.js                 creator app and team console
+demo/creator.js, team.js                 influencer app and team console
 demo/journey.js                          the 17 steps + what-if branch: screen, button, action, "done" test
 demo/data.js                             fictional influencers, brands, prospects
 ```
 
 - Two saved "worlds": `bb-demo-v3` (standalone) and `bb-journey-v1` (journey, starts before anyone has joined).
 - Money wording follows the site: a licensed payment partner holds the money; our fee is earned when a deal ends.
+- Wording: "influencer" everywhere investors, sellers and our team look; Nusrat's own screens say
+  "content creator" (as on the landing page's join buttons).
 - Chat, feed and payment screens are neutral on purpose: no Facebook, WhatsApp, bKash or Nagad logos or colours.
 - Run locally: `python -m http.server 8000`, then open http://localhost:8000/demo/
 - Design notes: `docs/specs/2026-10-10-journey-demo-design.md`.

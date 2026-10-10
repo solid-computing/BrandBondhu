@@ -74,15 +74,16 @@
       h('div', { class: 'post-vis', 'aria-hidden': 'true' },
         h('span', { class: 'pv-big' }, L('24 ঘণ্টায় 5 জন', '5 in 24 hours')),
         h('span', null, L('ইনফ্লুয়েন্সার শর্টলিস্ট, ফ্রি', 'Influencer shortlist, free'))),
-      h('p', { class: 'tiny muted' }, L('ডেমো: পোস্ট আর গ্রুপ কাল্পনিক', 'Demo: the post and group are fictional')));
+      h('p', { class: 'tiny muted' }, L('গ্রুপে আমাদের ফ্রি পোস্ট, পেইড অ্যাড না। ডেমো: পোস্ট আর গ্রুপ কাল্পনিক।', 'Our free post in the group, not a paid ad. Demo: the post and group are fictional.')));
 
     var form = asked
       ? h('div', { class: 'card' }, h('span', { class: 'chip chip-green', style: 'align-self:flex-start' }, BB.icon('check', 14), L('পাঠানো হয়েছে', 'Sent')),
           h('p', null, L('ধন্যবাদ! 24 ঘণ্টার মধ্যে আমাদের টিম চ্যাটে আপনার শর্টলিস্ট পাঠাবে।', 'Thanks! Our team will send your shortlist in chat within 24 hours.')),
           h('a', { class: 'btn', href: '#/s/chat', style: 'align-self:flex-start' }, L('চ্যাট খুলুন', 'Open the chat'), icon('arrow', 18)))
       : h('form', { class: 'card', onsubmit: function (e) { e.preventDefault(); BB.sellerRequest(); BB.toast(L('পাঠানো হয়েছে। চ্যাটে উত্তর আসবে।', 'Sent. The reply will come in chat.')); BB.render(); } },
+          h('span', { class: 'chip chip-pink', style: 'align-self:flex-start' }, L('আমাদের ওয়েবসাইট', 'Our website')),
           h('h2', null, L('ফ্রি শর্টলিস্ট নিন', 'Get your free shortlist')),
-          h('p', { class: 'small muted' }, L('পোস্টের লিংকে ক্লিক করলে এই ছোট ফর্মটা আসে। কোনো টাকা লাগে না।', 'The link in the post opens this short form. No payment needed.')),
+          h('p', { class: 'small muted' }, L('পোস্টের লিংকে ক্লিক করলে আমাদের ওয়েবসাইটে এই ছোট ফর্মটা খোলে। কোনো টাকা লাগে না।', 'The link in the post opens this short form on our website. No payment needed.')),
           BB.field('sp-page', L('আপনার পেজ বা পণ্যের লিংক', 'Your page or product link'), h('input', { id: 'sp-page', type: 'text', value: b.fb, readonly: true })),
           h('div', { class: 'grid two' },
             BB.field('sp-cat', L('কী বিক্রি করেন', 'What you sell'), h('input', { id: 'sp-cat', type: 'text', value: BB.lbl(D.categories, b.cat), readonly: true })),
@@ -95,7 +96,7 @@
         h('div', null, h('strong', null, L('অনলাইন সেলারদের আড্ডা', 'Online sellers\' hangout')), h('div', { class: 'tiny muted' }, L('প্রাইভেট গ্রুপ · 48 হাজার মেম্বার · কাল্পনিক', 'Private group · 48K members · fictional')))),
       post, form),
       L('গ্রুপ পোস্ট', 'Group post'),
-      BB.outsideBar(L('সোশ্যাল মিডিয়া', 'Social media'), L('সাদিয়া ফেসবুকে স্ক্রল করছেন (ডেমো)', 'Sadia scrolling her feed (demo)'))];
+      BB.outsideBar(L('ফেসবুক (আমাদের অ্যাপ না)', 'Facebook (not our app)'), L('সাদিয়া ফেসবুকে স্ক্রল করছেন · ডেমো', 'Sadia scrolling Facebook · demo'))];
   }
 
   /* ---------- S2: the shortlist arrives in chat ---------- */
@@ -144,7 +145,7 @@
     }
     return [h('div', { class: 'chat-wrap' }, BB.chat(msgs)),
       L('চ্যাট', 'Chat'),
-      BB.outsideBar(L('Brandবন্ধু টিম', 'Brandবন্ধু team'), L('চ্যাট · সাধারণত 1 ঘণ্টার মধ্যে উত্তর দেয়', 'Chat · usually replies within an hour'), stage === 'customer' ? '#/' : null)];
+      BB.outsideBar(L('Brandবন্ধু টিম', 'Brandবন্ধু team'), L('হোয়াটসঅ্যাপ চ্যাট (আমাদের অ্যাপ না) · সাধারণত 1 ঘণ্টায় উত্তর', 'WhatsApp chat (not our app) · usually replies within an hour'), stage === 'customer' ? '#/' : null)];
   }
 
   BB.hooks.reset.push(function () { picked = null; });

@@ -1,5 +1,5 @@
-/* Brandবন্ধু demo: our team's console. Shortlist requests, the creator pipeline (we find and message
-   creators ourselves at the start), verification, the money and reported problems. */
+/* Brandবন্ধু demo: our team's console. Shortlist requests, the influencer pipeline (we find and message
+   influencers ourselves at the start), verification, the money and reported problems. */
 (function () {
   'use strict';
 
@@ -91,7 +91,7 @@
       L('রিকোয়েস্ট', 'Requests')];
   }
 
-  /* ---------- T2: creator pipeline ---------- */
+  /* ---------- T2: influencer pipeline ---------- */
   function viewPipeline() {
     var s = S(), i = BB.byId(BB.CR);
     var people = s.prospects.map(function (p) { return { p: p, stage: p.stage, nusrat: false }; });
@@ -114,7 +114,7 @@
         } }, L('ইনভাইট পাঠান', 'Send invite'), icon('arrow', 16)) : null);
     }
     return [h('div', { style: 'display:contents' },
-      BB.pageHead(L('ক্রিয়েটর পাইপলাইন', 'Creator pipeline'), L('শুরুতে আমরা নিজেরাই ক্রিয়েটর খুঁজে মেসেজ করি। ভেরিফাই হলে তবেই সেলাররা দেখতে পান।', 'At the start we find creators and message them ourselves. Sellers only see them once verified.')),
+      BB.pageHead(L('ইনফ্লুয়েন্সার পাইপলাইন', 'Influencer pipeline'), L('শুরুতে আমরা নিজেরাই ইনফ্লুয়েন্সার খুঁজে মেসেজ করি। ভেরিফাই হলে তবেই সেলাররা দেখতে পান।', 'At the start we find influencers and message them ourselves. Sellers only see them once verified.')),
       h('ol', { class: 'funnel' }, STAGES.map(function (st, k) {
         return h('li', null, h('span', { class: 'big' }, counts[k]), h('span', { class: 'tiny' }, stageName(st)));
       })),
@@ -149,7 +149,7 @@
     if (s.cr.status === 'review') queue.push({ p: i, nusrat: true });
     s.prospects.filter(function (p) { return p.stage === 'joined'; }).forEach(function (p) { queue.push({ p: p, nusrat: false }); });
     return [h('div', { style: 'display:contents' },
-      BB.pageHead(L('ভেরিফিকেশন', 'Verification'), L('ডিরেক্টরিতে ওঠার আগে প্রত্যেক ক্রিয়েটরকে একবার চেক করি। ভুয়া ফলোয়ার থাকলে বাদ।', 'We check every creator once before they reach the directory. Fake followers are turned away.')),
+      BB.pageHead(L('ভেরিফিকেশন', 'Verification'), L('ডিরেক্টরিতে ওঠার আগে প্রত্যেক ইনফ্লুয়েন্সারকে একবার চেক করি। ভুয়া ফলোয়ার থাকলে বাদ।', 'We check every influencer once before they reach the directory. Fake followers are turned away.')),
       queue.length ? h('div', { class: 'grid two' }, queue.map(function (x) {
         var p = x.p, list = checks(p, x.nusrat), bad = list.some(function (c) { return !c[0]; });
         return h('article', { class: 'card' + (x.nusrat ? ' attn-card' : '') },
@@ -197,8 +197,8 @@
       h('div', { class: 'stat-grid six' },
         BB.statCard(L('মোট জমা', 'Paid in'), BB.money(paidIn)),
         BB.statCard(L('এখন জমা আছে', 'Held now'), BB.money(held), L('পেমেন্ট পার্টনারের কাছে', 'With the payment partner')),
-        BB.statCard(L('ক্রিয়েটরদের দেওয়া', 'Paid to creators'), BB.money(BB.sum(paid, 'fee'))),
-        BB.statCard(L('আমাদের আয়', 'Our revenue'), BB.money(BB.sum(paid, 'pf')), L('ক্রিয়েটরের ফির উপর 15%', '15% on top of the creator fee')),
+        BB.statCard(L('ইনফ্লুয়েন্সারদের দেওয়া', 'Paid to influencers'), BB.money(BB.sum(paid, 'fee'))),
+        BB.statCard(L('আমাদের আয়', 'Our revenue'), BB.money(BB.sum(paid, 'pf')), L('ইনফ্লুয়েন্সারের ফির উপর 15%', '15% on top of the influencer fee')),
         BB.statCard(L('ভ্যাট', 'VAT'), BB.money(BB.sum(paid, 'vat')), L('সরকারকে যায়', 'Goes to the government')),
         BB.statCard(L('ফেরত', 'Refunded'), BB.money(BB.sum(refunded, 'total')))),
       h('div', { class: 'card' }, h('div', { class: 'kv' }, h('h3', null, L('শিগগির টাকা ছাড়া হবে', 'Releasing soon')),
@@ -263,7 +263,7 @@
     var nProb = allDeals().filter(function (x) { return x.d.stage === 'disputed'; }).length;
     return BB.tabBar([
       ['#/team', 'requests', L('রিকোয়েস্ট', 'Requests'), 'list', nReq || null],
-      ['#/team/pipeline', 'pipeline', L('ক্রিয়েটর', 'Creators'), 'search'],
+      ['#/team/pipeline', 'pipeline', L('ইনফ্লুয়েন্সার', 'Influencers'), 'search'],
       ['#/team/verify', 'verify', L('ভেরিফাই', 'Verify'), 'shield', nVer || null],
       ['#/team/money', 'money', L('টাকা', 'Money'), 'wallet'],
       ['#/team/problems', 'problems', L('সমস্যা', 'Problems'), 'flag', nProb || null]

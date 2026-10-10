@@ -20,7 +20,7 @@
     note: ['যেকোনো ধাপে ক্লিক করে সেখানে চলে যান। অ্যাপের ভেতরেও নিজে ক্লিক করতে পারেন।', 'Click any step to jump there. You can also click around inside the app yourself.'],
     offTrack: ['আপনি গল্পের বাইরে চলে গেছেন। "আবার শুরু" চাপলে ধাপে ধাপে দেখা যাবে।', 'You have gone off the script. Press Restart to follow the journey again.'],
     journey: ['জার্নি', 'Journey'], app: ['শুধু সেলার ডেমো', 'Seller demo only'],
-    roles: { seller: ['সেলার', 'Seller'], team: ['টিম', 'Team'], creator: ['ক্রিয়েটর', 'Creator'] },
+    roles: { seller: ['সেলার', 'Seller'], team: ['টিম', 'Team'], creator: ['ইনফ্লুয়েন্সার', 'Influencer'] },
     chrome: ['Brandবন্ধু টিম কনসোল', 'Brandবন্ধু team console'], frame: ['Brandবন্ধু অ্যাপ (ডেমো)', 'Brandবন্ধু app (demo)']
   };
   function t(k) { var v = T[k]; return v[lang === 'bn' ? 0 : 1]; }
