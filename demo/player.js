@@ -202,12 +202,12 @@
     } else if (st.complete) {
       kids.push(btn('dark', 'restart', t('replay'), act(function () { api.restart(); })));
       kids.push(st.mode === 'main' ? btn('yellow', 'flag', t('whatif'), act(function () { api.whatIf(); }))
-                                   : btn('yellow', 'back', t('toMain'), act(function () { api.goto('main', 14); })));
+                                   : btn('yellow', 'back', t('toMain'), act(function () { api.goto('main', st.resume); })));
     } else {
       kids.push(autoT ? btn('dark', 'pause', t('pause'), stopAuto) : btn('dark', 'play', t('play'), startAuto));
       kids.push(btn('yellow', 'next', st.onStep ? t('next') : t('show'), act(function () { api.next(); })));
       if (st.canWhatIf && st.mode === 'main') kids.push(btn('dark wide', 'flag', t('whatif'), act(function () { api.whatIf(); })));
-      if (st.mode === 'whatif') kids.push(btn('dark wide', 'back', t('toMain'), act(function () { api.goto('main', 14); })));
+      if (st.mode === 'whatif') kids.push(btn('dark wide', 'back', t('toMain'), act(function () { api.goto('main', st.resume); })));
     }
     c.replaceChildren.apply(c, kids);
     document.documentElement.style.setProperty('--caph', $('#p-cap').offsetHeight + 'px');

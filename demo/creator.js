@@ -171,6 +171,7 @@
     var c = x.c, d = x.d, b = BB.byBrand(c.brandId), timed = c.format === 'mention' || c.format === 'live';
     return h('div', { class: 'card' },
       h('div', { class: 'kv' }, h('h3', null, BB.brandName(b)), h('span', { class: 'chip' }, icon('facebook', 14), BB.compact(b.fans) + L(' ফলোয়ার', ' followers'))),
+      h('span', { class: 'chip chip-green', style: 'align-self:flex-start' }, icon('shield', 14), L('ভেরিফায়েড ব্র্যান্ড: পেজ আর পণ্য চেক করা', 'Verified brand: page and product checked')),
       BB.kv(L('কী প্রচার', 'Promote'), BB.txt(c.product)),
       BB.kv(L('কীভাবে', 'How'), BB.lbl(D.formats, c.format)),
       timed ? BB.kv(L('কমপক্ষে', 'At least'), (c.minSec || 30) + L(' সেকেন্ড', ' seconds')) : null,

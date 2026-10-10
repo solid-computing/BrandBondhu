@@ -107,6 +107,13 @@
       flag: { bn: '2 দিনে হঠাৎ 6,000 ফলোয়ার বেড়েছে, এনগেজমেন্ট খুব কম', en: 'Gained 6,000 followers in 2 days, and engagement is very low' } }
   ];
 
+  // Brands waiting for our check before they can see influencer names. flag = why our team should say no.
+  var brandApplicants = [
+    { id: 'luckykhela', nameEn: 'Lucky Khela 777', nameBn: 'লাকি খেলা 777', fb: 'facebook.com/luckykhela777bd', fans: 91000, pageAge: { bn: '3 সপ্তাহ', en: '3 weeks' },
+      what: { bn: 'অনলাইন বেটিং অ্যাপ', en: 'Online betting app' }, ago: 3,
+      flag: { bn: 'বেটিং অ্যাপ: বাংলাদেশে অবৈধ, আমরা নিই না', en: 'Betting app: illegal in Bangladesh, we do not take it' } }
+  ];
+
   // Budget choices on the free-shortlist form (same as the landing page).
   var budgets = {
     b20:  { bn: '৳20,000-এর কম',          en: 'Under ৳20,000',          max: 20000 },
@@ -116,6 +123,6 @@
 
   window.BB_DATA = {
     categories: categories, cities: cities, platforms: platforms, formats: formats,
-    influencers: influencers, brands: brands, prospects: prospects, budgets: budgets
+    influencers: influencers, brands: brands, prospects: prospects, budgets: budgets, brandApplicants: brandApplicants
   };
 })();

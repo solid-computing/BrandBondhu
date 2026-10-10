@@ -165,6 +165,7 @@
   // People and requests our team works with, shared by both worlds.
   function seedTeam(T, s) {
     s.prospects = (D.prospects || []).map(function (p) { return Object.assign({}, p, { at: T(p.ago) }); });
+    s.brandQueue = (D.brandApplicants || []).map(function (a) { return Object.assign({}, a, { at: T(a.ago), status: 'review' }); });
     s.requests = [
       { id: 'r-mezban', brandId: 'chattala-bites', budget: 'b20', phone: '018•• •••374', at: T(60), status: 'converted', picks: ['rafi', 'tahmid', 'farzana', 'rakib'] },
       { id: 'r-surma', brandId: 'sylhet-glow', budget: 'b20', phone: '017•• •••905', at: T(40), status: 'converted', picks: ['priya', 'tasnim', 'tania', 'lamia', 'nazia'] }
@@ -403,9 +404,10 @@
     var r = route(), key = r.parts.join('/');
     var same = key === lastRoute, y = window.scrollY;
     var view, title, role = roleOf(r);
-    // A seller who has not signed up yet only has the group post and the chat.
+    // A seller who is not set up yet only has the group post, the chat and the sign-up.
     if (role === 'seller' && state.seller.stage !== 'customer' && r.name !== 's') {
-      r = { name: 's', id: state.seller.stage === 'stranger' ? 'post' : 'chat', parts: ['s', state.seller.stage === 'stranger' ? 'post' : 'chat'] };
+      var st = state.seller.stage, to = st === 'stranger' ? 'post' : (st === 'requested' || (st === 'shortlisted' && !state.seller.opened)) ? 'chat' : 'join';
+      r = { name: 's', id: to, parts: ['s', to] };
     }
     var bar = null;   // views outside our app (social feed, chats) bring their own top bar
     if (BB.views[r.name]) { var out = BB.views[r.name](r); view = out[0]; title = out[1]; bar = out[2] || null; }
@@ -518,7 +520,8 @@
 
     return h('div', { style: 'display:contents' },
       h('div', { style: 'display:flex;flex-direction:column;gap:8px' },
-        h('span', { class: 'chip chip-cream', style: 'align-self:flex-start' }, L('ডেমো ব্র্যান্ড', 'Demo brand')),
+        h('div', { class: 'chips' }, h('span', { class: 'chip chip-cream' }, L('ডেমো ব্র্যান্ড', 'Demo brand')),
+          h('span', { class: 'chip chip-green' }, icon('shield', 14), L('ভেরিফায়েড ব্র্যান্ড', 'Verified brand'))),
         h('h1', null, brandName(b)),
         h('p', { class: 'muted' }, h('span', { class: 'chip', style: 'margin-right:8px' }, icon('facebook', 14), L('Facebook পেজ', 'Facebook page')), b.fb + ' · ' + L(compact(b.fans) + ' ফলোয়ার', compact(b.fans) + ' followers'))),
       h('div', { class: 'stat-grid' },
