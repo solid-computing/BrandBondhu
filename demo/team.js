@@ -266,7 +266,7 @@
       ev.push([d.t.fundedAt, who, L('জমা ' + BB.money(d.total), 'Paid in ' + BB.money(d.total))]);
       if (d.t.paidAt) ev.push([d.t.paidAt, who, L(nm + ' পেলেন ' + BB.money(d.fee) + ' · আমাদের ফি ' + BB.money(d.pf) + ' · ভ্যাট ' + BB.money(d.vat), nm + ' got ' + BB.money(d.fee) + ' · our fee ' + BB.money(d.pf) + ' · VAT ' + BB.money(d.vat))]);
       if (d.t.refundedAt) ev.push([d.t.refundedAt, who, L(BB.money(d.total) + ' ফেরত গেছে', BB.money(d.total) + ' refunded')]);
-      if (d.t.disputedAt) ev.push([d.t.disputedAt, who, L('সমস্যা জানানো হয়েছে, পেমেন্ট আটকে', 'Problem reported, payout on hold')]);
+      if (d.t.disputedAt) ev.push([d.t.disputedAt, who, BB.caseName(d) + L(': টাকা আটকে, টিম দেখছে', ': money held while we check')]);
     });
     ev.sort(function (a, b) { return b[0] - a[0]; });
     return [h('div', { style: 'display:contents' },
@@ -298,27 +298,33 @@
     var open = all.filter(function (x) { return x.d.stage === 'disputed'; });
     var done = all.filter(function (x) { return x.d.resolved; });
     return [h('div', { style: 'display:contents' },
-      BB.pageHead(L('সমস্যা', 'Problems'), L('সেলার সমস্যা জানালে পেমেন্ট আটকে যায়। প্রুফ আর পোস্ট মিলিয়ে আমরা সিদ্ধান্ত নিই।', 'When a seller reports a problem, the payout freezes. We compare the proof with the post and decide.')),
+      BB.pageHead(L('সমস্যা আর ফেরত', 'Problems and refunds'), L('কোনো টাকা সরাসরি ফেরত যায় না। পোস্ট নিয়ে সমস্যা, বাতিলের অনুরোধ বা অফার না নেওয়া, সব আগে টিম চেক করে। ততক্ষণ টাকা পেমেন্ট পার্টনারের কাছে জমা থাকে।', 'No money is refunded directly. Problems with a post, cancellations and declined offers are all checked by our team first. Until then the money stays with the payment partner.')),
       open.length ? open.map(function (x) {
-        var c = x.c, d = x.d, b = BB.byBrand(c.brandId), i = BB.byId(d.infId);
+        var c = x.c, d = x.d, b = BB.byBrand(c.brandId), i = BB.byId(d.infId), kind = d.kind || 'problem';
+        var how = {
+          problem: L('টিম লিংক খুলে প্রুফের সময়টা দেখে: উল্লেখ আছে কি না, কোড ঠিক কি না।', 'The team opens the link at the proof time: is the mention there, is the code right?'),
+          cancel: L('ইনফ্লুয়েন্সারকে জিজ্ঞেস করি কাজ শুরু হয়েছে কি না। শুরু না হলে ফেরত, শুরু হলে ডিল চলবে।', 'We ask the influencer whether work has started. Not started: refund. Started: the deal carries on.'),
+          declined: L('সেলারকে আগে অন্য একজন ম্যাচ দিই। না চাইলে চেক করে টাকা ফেরত।', 'We first offer the seller another match. If they do not want one, we refund after a check.')
+        }[kind];
+        var buttons = [h('button', { type: 'button', class: 'btn btn-danger btn-sm', 'data-j': 'refund', onclick: function () {
+              BB.resolveDispute(c, d, 'refund'); BB.toast(L('চেক শেষ। সেলার পুরো টাকা ফেরত পেয়েছেন।', 'Checked. The seller got a full refund.')); BB.render();
+            } }, { problem: L('উল্লেখ নেই: পুরো টাকা ফেরত', 'No mention: full refund'), cancel: L('কাজ শুরু হয়নি: টাকা ফেরত', 'Not started: refund'), declined: L('চেক করে টাকা ফেরত', 'Checked: refund') }[kind])];
+        if (kind !== 'declined') buttons.push(h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'data-j': 'resume', onclick: function () {
+              BB.resolveDispute(c, d, 'resume'); BB.toast(L('ডিল আবার চলছে।', 'The deal carries on.')); BB.render();
+            } }, kind === 'cancel' ? L('কাজ শুরু হয়ে গেছে: ডিল চলবে', 'Work started: deal carries on') : L('উল্লেখ আছে: পেমেন্ট চালু', 'Mention is there: resume payout')));
         return h('article', { class: 'card attn-card' },
           h('div', { class: 'kv' }, h('h3', null, BB.brandName(b) + ' × ' + BB.infName(i)), h('strong', null, BB.money(d.total))),
+          h('span', { class: 'chip chip-red', style: 'align-self:flex-start' }, BB.caseName(d)),
           h('div', { class: 'grid two' },
-            h('div', { class: 'proof' }, h('strong', null, L('সেলারের অভিযোগ', 'Seller\'s complaint')), h('p', null, d.disputeReason || ''), h('span', { class: 'tiny muted' }, BB.ago(d.t.disputedAt))),
-            BB.proofCard(c, d)),
-          h('p', { class: 'small muted' }, L('টিম লিংক খুলে প্রুফের সময়টা দেখে: উল্লেখ আছে কি না, কোড ঠিক কি না।', 'The team opens the link at the proof time: is the mention there, is the code right?')),
-          h('div', { class: 'row' },
-            h('button', { type: 'button', class: 'btn btn-danger btn-sm', 'data-j': 'refund', onclick: function () {
-              BB.resolveDispute(c, d, 'refund'); BB.toast(L('উল্লেখ ছিল না। সেলার পুরো টাকা ফেরত পেয়েছেন।', 'No mention. The seller got a full refund.')); BB.render();
-            } }, L('উল্লেখ নেই: পুরো টাকা ফেরত', 'No mention: full refund')),
-            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'data-j': 'resume', onclick: function () {
-              BB.resolveDispute(c, d, 'resume'); BB.toast(L('উল্লেখ ঠিক আছে। পেমেন্ট আবার চালু।', 'The mention is there. Payout resumed.')); BB.render();
-            } }, L('উল্লেখ আছে: পেমেন্ট চালু', 'Mention is there: resume payout'))));
-      }) : h('div', { class: 'card empty' }, h('p', { class: 'muted' }, L('এখন কোনো সমস্যা নেই।', 'No open problems.'))),
+            h('div', { class: 'proof' }, h('strong', null, kind === 'declined' ? L('কী হয়েছে', 'What happened') : L('সেলার যা বলেছেন', 'What the seller said')), h('p', null, d.disputeReason || ''), h('span', { class: 'tiny muted' }, BB.ago(d.t.disputedAt))),
+            kind === 'problem' ? BB.proofCard(c, d) : h('div', { class: 'proof' }, h('strong', null, L('ডিল কোথায় ছিল', 'Where the deal was')), h('p', null, BB.stageText(c, Object.assign({}, d, { stage: d.prevStage || 'funded' }))))),
+          h('p', { class: 'small muted' }, how),
+          h('div', { class: 'row' }, buttons));
+      }) : h('div', { class: 'card empty' }, h('p', { class: 'muted' }, L('এখন কোনো সমস্যা বা ফেরতের অনুরোধ নেই।', 'No open problems or refund requests.'))),
       done.length ? h('h2', null, L('সমাধান হয়েছে', 'Resolved')) : null,
       done.length ? h('div', { class: 'card' }, h('ul', { class: 'ledger' }, done.map(function (x) {
-        return h('li', null, h('span', { class: 'chip ' + (x.d.resolved === 'refund' ? 'chip-red' : 'chip-green') }, x.d.resolved === 'refund' ? L('ফেরত', 'Refunded') : L('পেমেন্ট চালু', 'Resumed')),
-          h('span', null, BB.brandName(BB.byBrand(x.c.brandId)) + ' × ' + BB.infName(BB.byId(x.d.infId))));
+        return h('li', null, h('span', { class: 'chip ' + (x.d.resolved === 'refund' ? 'chip-red' : 'chip-green') }, x.d.resolved === 'refund' ? L('ফেরত', 'Refunded') : L('ডিল চলছে', 'Carried on')),
+          h('span', null, BB.brandName(BB.byBrand(x.c.brandId)) + ' × ' + BB.infName(BB.byId(x.d.infId)) + ' · ' + BB.caseName(x.d)));
       }))) : null),
       L('সমস্যা', 'Problems')];
   }
@@ -343,7 +349,7 @@
       ['#/team/pipeline', 'pipeline', L('ইনফ্লুয়েন্সার', 'Influencers'), 'search'],
       ['#/team/verify', 'verify', L('ভেরিফাই', 'Verify'), 'shield', nVer || null],
       ['#/team/money', 'money', L('টাকা', 'Money'), 'wallet'],
-      ['#/team/problems', 'problems', L('সমস্যা', 'Problems'), 'flag', nProb || null]
+      ['#/team/problems', 'problems', L('সমস্যা/ফেরত', 'Refunds'), 'flag', nProb || null]
     ], sub);
   };
 })();

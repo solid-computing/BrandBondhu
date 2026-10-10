@@ -122,3 +122,7 @@ Commission-on-sales deals, several deals in the guided run, real sign-in, real p
   and our team checks the top 5. The seller gets one recommendation with the reasons and books in one
   tap; the other matches are tucked under "See other matches". (A recommended set for bigger budgets
   is the next step; it is not in the demo, whose seller has a small budget.)
+- **No direct refunds.** A brand's cancellation, an influencer declining an offer and a problem after
+  posting each open a case in the team console ("Problems and refunds"). The money stays with the
+  payment partner until our team decides: refund, let the deal carry on, or (for a decline) offer the
+  brand another match first.

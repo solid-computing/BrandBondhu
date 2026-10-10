@@ -13,7 +13,7 @@
   var ORDER = ['funded', 'accepted', 'plan', 'approved', 'live', 'paid'];
 
   function deal() { var id = S().j.dealId; return id ? BB.findDeal(id) : null; }
-  function at(x) { return !x ? -1 : x.d.stage === 'disputed' ? 4 : ORDER.indexOf(x.d.stage); }   // refunded = -1
+  function at(x) { return !x ? -1 : x.d.stage === 'disputed' ? ORDER.indexOf(x.d.prevStage || 'live') : ORDER.indexOf(x.d.stage); }   // refunded = -1
   function camp() { return '#/c/' + S().j.campaignId; }
   function dealRoute(kind) { return '#/cr/' + kind + '/' + S().j.dealId; }
   // Amounts for the words: the real deal once it exists, else what Nusrat's fee would cost.
@@ -170,11 +170,11 @@
       cap: function () { return L('ধরুন নুসরাত আসলে কিছু বলেননি। সাদিয়া "উল্লেখ নেই" জানান, সাথে সাথে পেমেন্ট আটকে যায়।', 'Say Nusrat never actually mentioned it. Sadia reports "no mention" and the payout freezes at once.'); },
       route: camp, target: function () { return '[data-j="report"]'; },
       done: function () { var x = deal(); return !!x && (x.d.stage === 'disputed' || !!x.d.resolved); },
-      act: function () { var x = deal(); x.d.disputeReason = L('কোনো উল্লেখ নেই', 'The sponsor was not mentioned'); BB.advance(x.c, x.d, 'disputed'); } },
+      act: function () { var x = deal(); BB.openCase(x.c, x.d, 'problem', L('কোনো উল্লেখ নেই', 'The sponsor was not mentioned')); } },
     { lane: 'team', phase: 6, gap: 6,
       t: function () { return L('প্রুফ দেখে সিদ্ধান্ত', 'Checks proof, decides'); },
       cap: function () { return L('টিম প্রুফের লিংক খুলে সময়টা দেখে। উল্লেখ নেই, তাই সেলার টাকা ফেরত পান। উল্লেখ থাকলে উল্টো পেমেন্ট চালু হতো।', 'Our team opens the proof link at the given time. No mention, so the seller is refunded. Had it been there, the payout would carry on.'); },
-      why: function () { return L('সেলার আর ইনফ্লুয়েন্সার দুজনই সুরক্ষিত।', 'Sellers and influencers are both protected.'); },
+      why: function () { return L('টিমের চেক ছাড়া কোনো টাকা ফেরত যায় না। সেলার আর ইনফ্লুয়েন্সার দুজনই সুরক্ষিত।', 'No refund goes out without our check. Sellers and influencers are both protected.'); },
       route: function () { return '#/team/problems'; }, target: function () { return '[data-j="refund"]'; },
       done: function () { var x = deal(); return !!x && !!x.d.resolved; },
       act: function () { var x = deal(); BB.resolveDispute(x.c, x.d, 'refund'); } },
@@ -251,7 +251,7 @@
 
   function offTrack() {
     var s = S(), x = deal();
-    if (mode() === 'main' && x && x.d.stage === 'refunded') return true;
+    if (mode() === 'main' && x && (x.d.stage === 'refunded' || x.d.stage === 'disputed')) return true;
     if (!x && s.campaigns.some(function (c) { return c.brandId === s.brandId; })) return true;
     return false;
   }

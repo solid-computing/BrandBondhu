@@ -26,7 +26,11 @@
   };
   BB.crSetFee = function (fee) { cr().fee = fee; me().fee = fee; BB.save(); };
   BB.crAccept = function (id) { var x = BB.findDeal(id); if (x && x.d.stage === 'funded') BB.advance(x.c, x.d, 'accepted'); };
-  BB.crDecline = function (id) { var x = BB.findDeal(id); if (x && x.d.stage === 'funded') { x.d.declined = true; BB.advance(x.c, x.d, 'refunded'); } };
+  // Saying no does not refund the brand directly: our team checks, then offers another match or refunds.
+  BB.crDecline = function (id) {
+    var x = BB.findDeal(id);
+    if (x && x.d.stage === 'funded') { x.d.declined = true; BB.openCase(x.c, x.d, 'declined', L('ইনফ্লুয়েন্সার অফারটা নেননি', 'The influencer declined the offer')); }
+  };
   BB.crSendPlan = function (id) {
     var x = BB.findDeal(id);
     if (!x || x.d.stage !== 'accepted') return;
@@ -43,7 +47,8 @@
       case 'plan': return L('ব্র্যান্ড প্ল্যান দেখছে', 'The brand is reviewing your plan');
       case 'approved': return L('পোস্ট করে প্রুফ দিন', 'Post it and submit proof');
       case 'live': return d.verified ? L('ব্র্যান্ড দেখেছে, টাকা আসছে', 'The brand checked it, money on the way') : L('পোস্ট হয়েছে, টাকা আসছে', 'Posted, money on the way');
-      case 'disputed': return L('ব্র্যান্ড সমস্যা জানিয়েছে', 'The brand reported a problem');
+      case 'disputed': return { cancel: L('ব্র্যান্ড বাতিল করতে চায়', 'The brand asked to cancel'), declined: L('আপনি অফারটা নেননি', 'You declined') }[d.kind] ||
+                              L('ব্র্যান্ড সমস্যা জানিয়েছে', 'The brand reported a problem');
       case 'paid': return L('টাকা পেয়েছেন', 'Paid');
       default: return L('বাতিল', 'Cancelled');
     }
@@ -197,7 +202,7 @@
         h('button', { type: 'button', class: 'btn', 'data-j': 'accept', onclick: function () { BB.crAccept(id); BB.toast(L('কাজটা নিয়েছেন। এবার ছোট একটা প্ল্যান পাঠান।', 'Accepted. Now send a short plan.')); BB.go('#/cr/deal/' + id); } },
           icon('check', 18), L('কাজটা নিচ্ছি', 'I\'ll take it')),
         h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () {
-          if (!confirm(L('অফারটা ফিরিয়ে দেবেন? ব্র্যান্ড পুরো টাকা ফেরত পাবে।', 'Decline this offer? The brand gets its money back.'))) return;
+          if (!confirm(L('অফারটা ফিরিয়ে দেবেন? আমাদের টিম ব্র্যান্ডকে অন্য কাউকে দেবে বা চেক করে টাকা ফেরত দেবে।', 'Decline this offer? Our team will offer the brand someone else, or refund it after a check.'))) return;
           BB.crDecline(id); BB.toast(L('ফিরিয়ে দিয়েছেন।', 'Declined.')); BB.go('#/cr');
         } }, L('এবার না', 'Not this time')))),
       L('অফার', 'Offer')];
@@ -209,7 +214,7 @@
     if (!x || x.d.infId !== BB.CR) return [BB.emptyCard(L('কাজটা পাওয়া যায়নি।', 'Deal not found.'), L('কাজে ফিরুন', 'Back to work'), '#/cr'), L('কাজ', 'Work')];
     if (x.d.stage === 'funded') return viewOffer(id);
     var c = x.c, d = x.d, i = me(), b = BB.byBrand(c.brandId), hh = BB.hold(d), n = BB.now(), panel;
-    var cur = ORDER.indexOf(d.stage === 'disputed' ? 'live' : d.stage);
+    var cur = ORDER.indexOf(d.stage === 'disputed' ? (d.prevStage || 'live') : d.stage);
     switch (d.stage) {
       case 'accepted': {
         var ta = h('textarea', { id: 'cr-plan', maxlength: 400 }, BB.planText(c, d));
@@ -252,9 +257,15 @@
         break;
       }
       case 'disputed':
-        panel = h('div', { class: 'panel attn' }, h('strong', null, L('ব্র্যান্ড একটা সমস্যা জানিয়েছে', 'The brand reported a problem')),
-          h('p', { class: 'small' }, L('কারণ: ' + (d.disputeReason || '') + '। আমাদের টিম আপনার প্রুফ দেখছে। টাকা আপাতত আটকে আছে।', 'Reason: ' + (d.disputeReason || '') + '. Our team is checking your proof. The money is on hold for now.')),
-          BB.proofCard(c, d));
+        panel = d.kind === 'cancel'
+          ? h('div', { class: 'panel attn' }, h('strong', null, L('ব্র্যান্ড বাতিল করতে চায়', 'The brand asked to cancel')),
+              h('p', { class: 'small' }, L('আমাদের টিম আপনার সাথে কথা বলবে। কাজ শুরু করে থাকলে জানান, তাহলে ডিল চলবে।', 'Our team will check with you. If you have already started, tell us and the deal carries on.')))
+          : d.kind === 'declined'
+          ? h('div', { class: 'panel' }, h('strong', null, L('আপনি অফারটা নেননি', 'You declined this offer')),
+              h('p', { class: 'small' }, L('আমাদের টিম ব্র্যান্ডের সাথে বিষয়টা মিটিয়ে নেবে।', 'Our team will sort it out with the brand.')))
+          : h('div', { class: 'panel attn' }, h('strong', null, L('ব্র্যান্ড একটা সমস্যা জানিয়েছে', 'The brand reported a problem')),
+              h('p', { class: 'small' }, L('কারণ: ' + (d.disputeReason || '') + '। আমাদের টিম আপনার প্রুফ দেখছে। টাকা আপাতত আটকে আছে।', 'Reason: ' + (d.disputeReason || '') + '. Our team is checking your proof. The money is on hold for now.')),
+              BB.proofCard(c, d));
         break;
       case 'paid':
         panel = h('div', { class: 'panel', style: 'background:var(--green-s)' },
@@ -266,7 +277,7 @@
         break;
       default:
         panel = h('div', { class: 'panel' }, h('strong', null, L('এই কাজটা বাতিল হয়েছে', 'This deal was cancelled')),
-          h('p', { class: 'small' }, d.declined ? L('আপনি অফারটা ফিরিয়ে দিয়েছেন। ব্র্যান্ড টাকা ফেরত পেয়েছে।', 'You declined the offer. The brand got its money back.')
+          h('p', { class: 'small' }, d.declined ? L('আপনি অফারটা ফিরিয়ে দিয়েছেন। টিম চেক করে ব্র্যান্ডকে টাকা ফেরত দিয়েছে।', 'You declined the offer. After a check, our team refunded the brand.')
             : d.resolved === 'refund' ? L('টিম দেখেছে উল্লেখ ছিল না, তাই ব্র্যান্ড টাকা ফেরত পেয়েছে।', 'Our team found no mention, so the brand got its money back.')
             : L('ব্র্যান্ড ডিলটা বাতিল করেছে।', 'The brand cancelled the deal.')));
     }
