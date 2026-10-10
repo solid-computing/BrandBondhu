@@ -126,3 +126,8 @@ Commission-on-sales deals, several deals in the guided run, real sign-in, real p
   posting each open a case in the team console ("Problems and refunds"). The money stays with the
   payment partner until our team decides: refund, let the deal carry on, or (for a decline) offer the
   brand another match first.
+- **How a case is decided (validation before any refund):** money held at once; the influencer gives
+  her side; our team works through a checklist (post at the given time, code, both sides) and the
+  propose button stays locked until it is done; the proposal carries a reason; a second person in
+  finance approves; only then does the payment partner move money. Both sides see the decision and the
+  reason. The what-if branch shows all five steps.

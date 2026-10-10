@@ -72,7 +72,8 @@ demo/data.js                             fictional influencers, brands, prospect
 - Two saved "worlds": `bb-demo-v3` (standalone) and `bb-journey-v1` (journey, starts before anyone has joined).
 - Money wording follows the site: a licensed payment partner holds the money; our fee is earned when a deal ends.
 - No refund goes out directly: cancellations, declined offers and problems after posting become cases our team
-  checks first (team console, "Refunds" tab).
+  checks first (team console, "Refunds" tab): both sides heard, a checklist that unlocks the decision, a proposal
+  with the reason, and a second approval by finance before any money moves.
 - Wording: "influencer" everywhere investors, sellers and our team look; Nusrat's own screens say
   "content creator" (as on the landing page's join buttons).
 - Chat, feed and payment screens are neutral on purpose: no Facebook, WhatsApp, bKash or Nagad logos or colours.
